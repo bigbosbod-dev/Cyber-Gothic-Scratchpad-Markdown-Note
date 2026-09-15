@@ -3,18 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>† SECURE CLOUD VAULT // AUTH †</title>
+  <title>† CYBER GOTHIC // GIST VAULT †</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Space+Mono:wght@400;700&family=Prompt:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <style>
     body {
@@ -63,29 +58,38 @@
       <div>
         <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ ENCRYPTED ACCESS PROTOCOL ✦</span>
         <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase tracking-wider mt-0.5">
-          PRIVATE // VAULT
+          GIST // VAULT NOTE
         </h1>
       </div>
       
       <div id="auth-controls" class="text-right">
-        <!-- JS Render -->
+        <!-- JS Rendered -->
       </div>
     </header>
 
-    <!-- Locked Screen (แสดงเมื่อยังไม่ Login) -->
-    <div id="locked-state" class="sigil-card p-12 text-center my-12">
-      <i data-lucide="lock" class="w-8 h-8 text-zinc-600 mx-auto mb-4"></i>
-      <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2">ACCESS RESTRICTED</h2>
-      <p class="text-xs text-zinc-500 max-w-sm mx-auto mb-6">VAULT นี้ถูกล็อกไว้เฉพาะเจ้าของบัญชีเท่านั้น โปรดยืนยันตัวตนด้วย Google เพื่อเปิดอ่านและบันทึก</p>
-      <button 
-        onclick="signInWithGoogle()" 
-        class="px-6 py-3 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg"
-      >
-        ✦ SIGN IN WITH GOOGLE ✦
-      </button>
+    <!-- Token Setup Modal (แสดงเฉพาะครั้งแรกที่ยังไม่ได้ใส่ Token) -->
+    <div id="token-modal" class="hidden sigil-card p-8 md:p-10 text-center my-8">
+      <i data-lucide="key" class="w-8 h-8 text-zinc-500 mx-auto mb-4"></i>
+      <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2">ENTER GITHUB ACCESS TOKEN</h2>
+      <p class="text-xs text-zinc-500 max-w-sm mx-auto mb-6">กรอก Personal Access Token ของคุณเพื่อเชื่อมต่อ Cloud Storage ส่วนตัว (จะถูกเก็บไว้เฉพาะในเครื่องนี้เท่านั้น)</p>
+      
+      <div class="max-w-md mx-auto space-y-3">
+        <input 
+          type="password" 
+          id="input-token" 
+          placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" 
+          class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-xs text-white outline-none focus:border-zinc-400 font-mono text-center tracking-wider"
+        >
+        <button 
+          onclick="saveToken()" 
+          class="w-full py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg"
+        >
+          ✦ CONNECT VAULT ✦
+        </button>
+      </div>
     </div>
 
-    <!-- Note Pad (แสดงเมื่อ Login ผ่าน) -->
+    <!-- Note Pad -->
     <div id="vault-content" class="hidden">
       <main class="sigil-card p-4 md:p-6 mb-4">
         <input 
@@ -98,7 +102,7 @@
         <textarea 
           id="note-body" 
           rows="16" 
-          placeholder="พิมพ์ข้อความที่นี่... ข้อมูลทั้งหมดถูกเข้ารหัสและซิงก์เฉพาะบัญชีของคุณ..."
+          placeholder="กำลังโหลดข้อมูลจาก GitHub Gist..."
           oninput="handleInput()"
           class="w-full bg-transparent text-zinc-200 placeholder:text-zinc-700 text-sm leading-relaxed outline-none resize-none font-mono"
         ></textarea>
@@ -111,6 +115,10 @@
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
             EXPORT .TXT
           </button>
+          <button onclick="fetchLatestNote()" class="px-3 py-2 border border-zinc-700 hover:border-zinc-300 bg-zinc-950 text-zinc-300 hover:text-white transition-all uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            SYNC NOW
+          </button>
         </div>
         <div class="text-right">
           <span id="sync-status" class="text-[10px] text-zinc-500 font-mono tracking-widest uppercase">IDLE</span>
@@ -122,103 +130,149 @@
   </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyA4EzCIXVB5U66ZhF-FCnwEkmUbTbREFmw",
-      authDomain: "dark-note-sync.firebaseapp.com",
-      projectId: "dark-note-sync",
-      storageBucket: "dark-note-sync.firebasestorage.app",
-      messagingSenderId: "740111352628",
-      appId: "1:740111352628:web:c26e700ce183f9ff6b9b61",
-      measurementId: "G-JHXFFLS4S7"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    
-    let currentUser = null;
-    let docRef = null;
-    let unsubscribeSnapshot = null;
+    const GIST_FILENAME = "cyber_vault_note.json";
+    let githubToken = localStorage.getItem("vault_gh_token") || null;
+    let gistId = localStorage.getItem("vault_gist_id") || null;
     let saveTimeout = null;
 
-    auth.onAuthStateChanged((user) => {
-      currentUser = user;
-      const lockedState = document.getElementById('locked-state');
-      const vaultContent = document.getElementById('vault-content');
-      const authControls = document.getElementById('auth-controls');
+    function initAuth() {
+      const modal = document.getElementById("token-modal");
+      const vault = document.getElementById("vault-content");
+      const controls = document.getElementById("auth-controls");
 
-      if (user) {
-        lockedState.classList.add('hidden');
-        vaultContent.classList.remove('hidden');
-        
-        authControls.innerHTML = `
-          <div class="text-[10px] text-emerald-400 font-mono tracking-wider uppercase mb-1">● AUTHENTICATED</div>
-          <button onclick="signOut()" class="text-[11px] text-zinc-500 hover:text-zinc-200 underline uppercase tracking-widest">
-            LOGOUT (${user.email.split('@')[0]})
-          </button>
-        `;
-
-        docRef = db.collection("users").doc(user.uid).collection("notes").doc("main_vault");
-        listenToNote();
+      if (!githubToken) {
+        modal.classList.remove("hidden");
+        vault.classList.add("hidden");
+        controls.innerHTML = `<span class="text-[10px] text-zinc-600 font-mono uppercase">LOCKED</span>`;
       } else {
-        lockedState.classList.remove('hidden');
-        vaultContent.classList.add('hidden');
-        authControls.innerHTML = `<span class="text-[10px] text-zinc-600 font-mono tracking-wider uppercase">LOCKED</span>`;
-        if (unsubscribeSnapshot) unsubscribeSnapshot();
+        modal.classList.add("hidden");
+        vault.classList.remove("hidden");
+        controls.innerHTML = `
+          <div class="text-[10px] text-emerald-400 font-mono tracking-wider uppercase mb-1">● GIST SYNC LINKED</div>
+          <button onclick="clearToken()" class="text-[10px] text-zinc-500 hover:text-zinc-200 underline uppercase tracking-widest">DISCONNECT</button>
+        `;
+        initVault();
       }
       lucide.createIcons();
-    });
-
-    function signInWithGoogle() {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch((err) => alert(err.message));
     }
 
-    function signOut() {
-      auth.signOut();
+    function saveToken() {
+      const input = document.getElementById("input-token").value.trim();
+      if (!input.startsWith("ghp_")) {
+        alert("กรุณากรอก GitHub Token ที่ขึ้นต้นด้วย ghp_ ให้ถูกต้องครับ");
+        return;
+      }
+      localStorage.setItem("vault_gh_token", input);
+      githubToken = input;
+      initAuth();
     }
 
-    function listenToNote() {
-      unsubscribeSnapshot = docRef.onSnapshot((doc) => {
-        if (doc.exists) {
-          const data = doc.data();
-          const activeElement = document.activeElement;
-          
-          if (activeElement !== document.getElementById('note-title')) {
-            document.getElementById('note-title').value = data.title || '';
+    function clearToken() {
+      if (confirm("ต้องการตัดการเชื่อมต่อ Token จากเครื่องนี้ใช่หรือไม่?")) {
+        localStorage.removeItem("vault_gh_token");
+        localStorage.removeItem("vault_gist_id");
+        githubToken = null;
+        gistId = null;
+        initAuth();
+      }
+    }
+
+    async function initVault() {
+      setSyncStatus('loading');
+      try {
+        if (!gistId) {
+          const res = await fetch("https://api.github.com/gists", {
+            headers: { Authorization: `token ${githubToken}` }
+          });
+          const gists = await res.json();
+          const existingGist = gists.find(g => g.files && g.files[GIST_FILENAME]);
+
+          if (existingGist) {
+            gistId = existingGist.id;
+            localStorage.setItem("vault_gist_id", gistId);
+          } else {
+            const createRes = await fetch("https://api.github.com/gists", {
+              method: "POST",
+              headers: {
+                Authorization: `token ${githubToken}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                description: "CYBER GOTHIC VAULT STORAGE [SECURE]",
+                public: false,
+                files: {
+                  [GIST_FILENAME]: {
+                    content: JSON.stringify({ title: "", body: "" })
+                  }
+                }
+              })
+            });
+            const newGist = await createRes.json();
+            gistId = newGist.id;
+            localStorage.setItem("vault_gist_id", gistId);
           }
-          if (activeElement !== document.getElementById('note-body')) {
-            document.getElementById('note-body').value = data.body || '';
-          }
+        }
+        await fetchLatestNote();
+      } catch (err) {
+        console.error(err);
+        setSyncStatus('error');
+      }
+    }
+
+    async function fetchLatestNote() {
+      if (!gistId) return;
+      setSyncStatus('loading');
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          headers: { Authorization: `token ${githubToken}` }
+        });
+        const data = await res.json();
+        const fileContent = data.files[GIST_FILENAME]?.content;
+        
+        if (fileContent) {
+          const parsed = JSON.parse(fileContent);
+          document.getElementById('note-title').value = parsed.title || '';
+          document.getElementById('note-body').value = parsed.body || '';
+          document.getElementById('note-body').placeholder = "พิมพ์ข้อความที่นี่... ระบบจะซิงก์ขึ้น GitHub Gist อัตโนมัติ...";
           updateStats();
         }
         setSyncStatus('synced');
-      }, (error) => {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
         setSyncStatus('error');
-      });
+      }
     }
 
     function handleInput() {
-      if (!currentUser) return;
       setSyncStatus('saving');
       updateStats();
 
       clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(() => {
+      saveTimeout = setTimeout(async () => {
         const title = document.getElementById('note-title').value;
         const body = document.getElementById('note-body').value;
 
-        docRef.set({
-          title: title,
-          body: body,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
+        try {
+          await fetch(`https://api.github.com/gists/${gistId}`, {
+            method: "PATCH",
+            headers: {
+              Authorization: `token ${githubToken}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              files: {
+                [GIST_FILENAME]: {
+                  content: JSON.stringify({ title, body, updatedAt: new Date().toISOString() })
+                }
+              }
+            })
+          });
           setSyncStatus('synced');
-        }).catch(() => {
+        } catch (err) {
+          console.error(err);
           setSyncStatus('error');
-        });
-      }, 500);
+        }
+      }, 800);
     }
 
     function setSyncStatus(state) {
@@ -226,11 +280,14 @@
       if (state === 'saving') {
         el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-ping mr-1"></span> SAVING...`;
         el.className = "text-[10px] text-amber-400 font-mono tracking-widest uppercase";
+      } else if (state === 'loading') {
+        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block animate-spin mr-1"></span> SYNCING...`;
+        el.className = "text-[10px] text-blue-400 font-mono tracking-widest uppercase";
       } else if (state === 'synced') {
         el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span> ENCRYPTED & SYNCED`;
         el.className = "text-[10px] text-emerald-400 font-mono tracking-widest uppercase";
       } else {
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-red-400 inline-block mr-1"></span> ACCESS DENIED`;
+        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-red-400 inline-block mr-1"></span> SYNC FAILED`;
         el.className = "text-[10px] text-red-400 font-mono tracking-widest uppercase";
       }
     }
@@ -252,7 +309,7 @@
       a.click();
     }
 
-    lucide.createIcons();
+    initAuth();
   </script>
 </body>
 </html>
