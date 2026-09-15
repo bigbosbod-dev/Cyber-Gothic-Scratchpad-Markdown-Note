@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>† CLOUD VAULT NOTE // SYNCED †</title>
+  <title>† SECURE CLOUD VAULT // AUTH †</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,6 +13,7 @@
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <style>
@@ -60,52 +61,67 @@
     <!-- Header -->
     <header class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
       <div>
-        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ CLOUD SYNC PROTOCOL ✦</span>
+        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ ENCRYPTED ACCESS PROTOCOL ✦</span>
         <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase tracking-wider mt-0.5">
-          CLOUD // VAULT NOTE
+          PRIVATE // VAULT
         </h1>
       </div>
-      <div class="text-right">
-        <span id="sync-status" class="text-[10px] text-zinc-500 font-mono tracking-widest uppercase flex items-center gap-1">
-          CONNECTING CLOUD...
-        </span>
-        <p id="word-count" class="text-[11px] text-zinc-500 mt-1">0 WORDS | 0 CHARS</p>
+      
+      <div id="auth-controls" class="text-right">
+        <!-- JS Render -->
       </div>
     </header>
 
-    <!-- Note Pad -->
-    <main class="sigil-card p-4 md:p-6 mb-4">
-      <input 
-        type="text" 
-        id="note-title" 
-        placeholder="UNTITLED ENTRY..." 
-        oninput="handleInput()"
-        class="w-full bg-transparent text-white font-bold text-lg md:text-xl border-b border-zinc-800/80 pb-3 mb-4 outline-none placeholder:text-zinc-700 tracking-wide font-mono"
+    <!-- Locked Screen (แสดงเมื่อยังไม่ Login) -->
+    <div id="locked-state" class="sigil-card p-12 text-center my-12">
+      <i data-lucide="lock" class="w-8 h-8 text-zinc-600 mx-auto mb-4"></i>
+      <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2">ACCESS RESTRICTED</h2>
+      <p class="text-xs text-zinc-500 max-w-sm mx-auto mb-6">VAULT นี้ถูกล็อกไว้เฉพาะเจ้าของบัญชีเท่านั้น โปรดยืนยันตัวตนด้วย Google เพื่อเปิดอ่านและบันทึก</p>
+      <button 
+        onclick="signInWithGoogle()" 
+        class="px-6 py-3 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg"
       >
-      <textarea 
-        id="note-body" 
-        rows="16" 
-        placeholder="พิมพ์ข้อความที่นี่... ข้อมูลจะถูกอัปโหลดขึ้น Cloud อัตโนมัติ เปิดจากเครื่องไหนหรือมือถือก็ข้อมูลตรงกัน..."
-        oninput="handleInput()"
-        class="w-full bg-transparent text-zinc-200 placeholder:text-zinc-700 text-sm leading-relaxed outline-none resize-none font-mono"
-      ></textarea>
-    </main>
+        ✦ SIGN IN WITH GOOGLE ✦
+      </button>
+    </div>
 
-    <!-- Toolbar Actions -->
-    <footer class="flex flex-wrap items-center justify-between gap-3 text-xs">
-      <div class="flex gap-2">
-        <button onclick="downloadNote()" class="px-3 py-2 border border-zinc-700 hover:border-zinc-300 bg-zinc-950 text-zinc-300 hover:text-white transition-all uppercase tracking-wider flex items-center gap-1.5">
-          <i data-lucide="download" class="w-3.5 h-3.5"></i>
-          EXPORT .TXT
-        </button>
-      </div>
-      <span class="text-[10px] text-zinc-600 tracking-widest uppercase">REAL-TIME FIRESTORE BACKEND</span>
-    </footer>
+    <!-- Note Pad (แสดงเมื่อ Login ผ่าน) -->
+    <div id="vault-content" class="hidden">
+      <main class="sigil-card p-4 md:p-6 mb-4">
+        <input 
+          type="text" 
+          id="note-title" 
+          placeholder="UNTITLED ENTRY..." 
+          oninput="handleInput()"
+          class="w-full bg-transparent text-white font-bold text-lg md:text-xl border-b border-zinc-800/80 pb-3 mb-4 outline-none placeholder:text-zinc-700 tracking-wide font-mono"
+        >
+        <textarea 
+          id="note-body" 
+          rows="16" 
+          placeholder="พิมพ์ข้อความที่นี่... ข้อมูลทั้งหมดถูกเข้ารหัสและซิงก์เฉพาะบัญชีของคุณ..."
+          oninput="handleInput()"
+          class="w-full bg-transparent text-zinc-200 placeholder:text-zinc-700 text-sm leading-relaxed outline-none resize-none font-mono"
+        ></textarea>
+      </main>
+
+      <!-- Toolbar Actions -->
+      <footer class="flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex gap-2">
+          <button onclick="downloadNote()" class="px-3 py-2 border border-zinc-700 hover:border-zinc-300 bg-zinc-950 text-zinc-300 hover:text-white transition-all uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            EXPORT .TXT
+          </button>
+        </div>
+        <div class="text-right">
+          <span id="sync-status" class="text-[10px] text-zinc-500 font-mono tracking-widest uppercase">IDLE</span>
+          <p id="word-count" class="text-[10px] text-zinc-600 mt-0.5">0 WORDS | 0 CHARS</p>
+        </div>
+      </footer>
+    </div>
 
   </div>
 
   <script>
-    // Firebase Config จากโปรเจกต์ dark-note-sync
     const firebaseConfig = {
       apiKey: "AIzaSyA4EzCIXVB5U66ZhF-fcNwEkmUbTbREFMw",
       authDomain: "dark-note-sync.firebaseapp.com",
@@ -116,35 +132,75 @@
       measurementId: "G-PNRNYGFQML"
     };
 
-    // เชื่อมต่อ Firebase
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.firestore();
-    const docRef = db.collection("notes").doc("my_main_note");
-
+    
+    let currentUser = null;
+    let docRef = null;
+    let unsubscribeSnapshot = null;
     let saveTimeout = null;
 
-    // ดึงข้อมูล Real-time จาก Cloud เมื่อเปิดเว็บ
-    docRef.onSnapshot((doc) => {
-      if (doc.exists) {
-        const data = doc.data();
-        const activeElement = document.activeElement;
+    auth.onAuthStateChanged((user) => {
+      currentUser = user;
+      const lockedState = document.getElementById('locked-state');
+      const vaultContent = document.getElementById('vault-content');
+      const authControls = document.getElementById('auth-controls');
+
+      if (user) {
+        lockedState.classList.add('hidden');
+        vaultContent.classList.remove('hidden');
         
-        if (activeElement !== document.getElementById('note-title')) {
-          document.getElementById('note-title').value = data.title || '';
-        }
-        if (activeElement !== document.getElementById('note-body')) {
-          document.getElementById('note-body').value = data.body || '';
-        }
-        updateStats();
+        authControls.innerHTML = `
+          <div class="text-[10px] text-emerald-400 font-mono tracking-wider uppercase mb-1">● AUTHENTICATED</div>
+          <button onclick="signOut()" class="text-[11px] text-zinc-500 hover:text-zinc-200 underline uppercase tracking-widest">
+            LOGOUT (${user.email.split('@')[0]})
+          </button>
+        `;
+
+        docRef = db.collection("users").doc(user.uid).collection("notes").doc("main_vault");
+        listenToNote();
+      } else {
+        lockedState.classList.remove('hidden');
+        vaultContent.classList.add('hidden');
+        authControls.innerHTML = `<span class="text-[10px] text-zinc-600 font-mono tracking-wider uppercase">LOCKED</span>`;
+        if (unsubscribeSnapshot) unsubscribeSnapshot();
       }
-      setSyncStatus('synced');
-    }, (error) => {
-      console.error(error);
-      setSyncStatus('error');
+      lucide.createIcons();
     });
 
-    // ฟังก์ชันส่งข้อมูลขึ้น Cloud
+    function signInWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch((err) => alert(err.message));
+    }
+
+    function signOut() {
+      auth.signOut();
+    }
+
+    function listenToNote() {
+      unsubscribeSnapshot = docRef.onSnapshot((doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          const activeElement = document.activeElement;
+          
+          if (activeElement !== document.getElementById('note-title')) {
+            document.getElementById('note-title').value = data.title || '';
+          }
+          if (activeElement !== document.getElementById('note-body')) {
+            document.getElementById('note-body').value = data.body || '';
+          }
+          updateStats();
+        }
+        setSyncStatus('synced');
+      }, (error) => {
+        console.error(error);
+        setSyncStatus('error');
+      });
+    }
+
     function handleInput() {
+      if (!currentUser) return;
       setSyncStatus('saving');
       updateStats();
 
@@ -159,8 +215,7 @@
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => {
           setSyncStatus('synced');
-        }).catch((err) => {
-          console.error(err);
+        }).catch(() => {
           setSyncStatus('error');
         });
       }, 500);
@@ -169,14 +224,14 @@
     function setSyncStatus(state) {
       const el = document.getElementById('sync-status');
       if (state === 'saving') {
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> UPLOADING...`;
-        el.className = "text-[10px] text-amber-400 font-mono tracking-widest uppercase flex items-center gap-1";
+        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-ping mr-1"></span> SAVING...`;
+        el.className = "text-[10px] text-amber-400 font-mono tracking-widest uppercase";
       } else if (state === 'synced') {
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> CLOUD SYNCED`;
-        el.className = "text-[10px] text-emerald-400 font-mono tracking-widest uppercase flex items-center gap-1";
+        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span> ENCRYPTED & SYNCED`;
+        el.className = "text-[10px] text-emerald-400 font-mono tracking-widest uppercase";
       } else {
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> SYNC ERROR (CHECK RULES)`;
-        el.className = "text-[10px] text-red-400 font-mono tracking-widest uppercase flex items-center gap-1";
+        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-red-400 inline-block mr-1"></span> ACCESS DENIED`;
+        el.className = "text-[10px] text-red-400 font-mono tracking-widest uppercase";
       }
     }
 
@@ -188,11 +243,9 @@
     }
 
     function downloadNote() {
-      const title = document.getElementById('note-title').value.trim() || 'untitled-entry';
+      const title = document.getElementById('note-title').value.trim() || 'private-vault';
       const body = document.getElementById('note-body').value;
-      const content = `${title.toUpperCase()}\n${'='.repeat(title.length)}\n\n${body}`;
-
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const blob = new Blob([`${title.toUpperCase()}\n\n${body}`], { type: 'text/plain;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `${title.toLowerCase().replace(/\s+/g, '-')}.txt`;
