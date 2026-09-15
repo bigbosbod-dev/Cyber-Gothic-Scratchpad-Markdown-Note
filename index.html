@@ -62,16 +62,14 @@
         </h1>
       </div>
       
-      <div id="auth-controls" class="text-right">
-        <!-- JS Rendered -->
-      </div>
+      <div id="auth-controls" class="text-right"></div>
     </header>
 
-    <!-- Token Setup Modal (แสดงเฉพาะครั้งแรกที่ยังไม่ได้ใส่ Token) -->
-    <div id="token-modal" class="hidden sigil-card p-8 md:p-10 text-center my-8">
+    <!-- Token Setup Modal (กรอก Token ครั้งแรก) -->
+    <div id="token-modal" class="sigil-card p-8 md:p-10 text-center my-8">
       <i data-lucide="key" class="w-8 h-8 text-zinc-500 mx-auto mb-4"></i>
       <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2">ENTER GITHUB ACCESS TOKEN</h2>
-      <p class="text-xs text-zinc-500 max-w-sm mx-auto mb-6">กรอก Personal Access Token ของคุณเพื่อเชื่อมต่อ Cloud Storage ส่วนตัว (จะถูกเก็บไว้เฉพาะในเครื่องนี้เท่านั้น)</p>
+      <p class="text-xs text-zinc-500 max-w-sm mx-auto mb-6">กรอก Personal Access Token เพื่อเชื่อมต่อ Cloud Vault ส่วนตัว</p>
       
       <div class="max-w-md mx-auto space-y-3">
         <input 
@@ -102,7 +100,7 @@
         <textarea 
           id="note-body" 
           rows="16" 
-          placeholder="กำลังโหลดข้อมูลจาก GitHub Gist..."
+          placeholder="พิมพ์ข้อความที่นี่... ข้อมูลจะซิงก์ขึ้น GitHub Gist อัตโนมัติ..."
           oninput="handleInput()"
           class="w-full bg-transparent text-zinc-200 placeholder:text-zinc-700 text-sm leading-relaxed outline-none resize-none font-mono"
         ></textarea>
@@ -135,6 +133,12 @@
     let gistId = localStorage.getItem("vault_gist_id") || null;
     let saveTimeout = null;
 
+    function renderIcons() {
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
     function initAuth() {
       const modal = document.getElementById("token-modal");
       const vault = document.getElementById("vault-content");
@@ -153,13 +157,13 @@
         `;
         initVault();
       }
-      lucide.createIcons();
+      renderIcons();
     }
 
     function saveToken() {
       const input = document.getElementById("input-token").value.trim();
-      if (!input.startsWith("ghp_")) {
-        alert("กรุณากรอก GitHub Token ที่ขึ้นต้นด้วย ghp_ ให้ถูกต้องครับ");
+      if (!input) {
+        alert("กรุณากรอก GitHub Token");
         return;
       }
       localStorage.setItem("vault_gh_token", input);
@@ -168,7 +172,7 @@
     }
 
     function clearToken() {
-      if (confirm("ต้องการตัดการเชื่อมต่อ Token จากเครื่องนี้ใช่หรือไม่?")) {
+      if (confirm("ต้องการตัดการเชื่อมต่อและลบ Token ออกจากเครื่องนี้?")) {
         localStorage.removeItem("vault_gh_token");
         localStorage.removeItem("vault_gist_id");
         githubToken = null;
@@ -184,6 +188,9 @@
           const res = await fetch("https://api.github.com/gists", {
             headers: { Authorization: `token ${githubToken}` }
           });
+          
+          if (!res.ok) throw new Error("Invalid Token or Network error");
+          
           const gists = await res.json();
           const existingGist = gists.find(g => g.files && g.files[GIST_FILENAME]);
 
@@ -198,7 +205,7 @@
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({
-                description: "CYBER GOTHIC VAULT STORAGE [SECURE]",
+                description: "CYBER GOTHIC VAULT STORAGE",
                 public: false,
                 files: {
                   [GIST_FILENAME]: {
@@ -216,6 +223,7 @@
       } catch (err) {
         console.error(err);
         setSyncStatus('error');
+        alert("เชื่อมต่อไม่สำเร็จ: กรุณาตรวจสอบว่า Token ถูกต้องและเปิดสิทธิ์ 'gist' ครบถ้วน");
       }
     }
 
@@ -233,7 +241,6 @@
           const parsed = JSON.parse(fileContent);
           document.getElementById('note-title').value = parsed.title || '';
           document.getElementById('note-body').value = parsed.body || '';
-          document.getElementById('note-body').placeholder = "พิมพ์ข้อความที่นี่... ระบบจะซิงก์ขึ้น GitHub Gist อัตโนมัติ...";
           updateStats();
         }
         setSyncStatus('synced');
@@ -281,7 +288,7 @@
         el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-ping mr-1"></span> SAVING...`;
         el.className = "text-[10px] text-amber-400 font-mono tracking-widest uppercase";
       } else if (state === 'loading') {
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block animate-spin mr-1"></span> SYNCING...`;
+        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block animate-pulse mr-1"></span> SYNCING...`;
         el.className = "text-[10px] text-blue-400 font-mono tracking-widest uppercase";
       } else if (state === 'synced') {
         el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span> ENCRYPTED & SYNCED`;
@@ -309,7 +316,9 @@
       a.click();
     }
 
-    initAuth();
+    window.addEventListener('DOMContentLoaded', () => {
+      initAuth();
+    });
   </script>
 </body>
 </html>
