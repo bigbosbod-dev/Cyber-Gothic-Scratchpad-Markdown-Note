@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>† CYBER NOTE // PERSISTENT VAULT †</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Space+Mono:wght@400;700&family=Prompt:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Space Mono', 'Prompt', monospace;
+      background-color: #050507;
+      background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
+    }
+    .gothic-title {
+      font-family: 'Cinzel', serif;
+      letter-spacing: 0.2em;
+    }
+    .sigil-card {
+      background: rgba(10, 10, 14, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      position: relative;
+    }
+    .sigil-card::before {
+      content: "†";
+      position: absolute;
+      top: -8px;
+      left: 12px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      background: #050507;
+      padding: 0 4px;
+    }
+    .sigil-card::after {
+      content: "†";
+      position: absolute;
+      bottom: -8px;
+      right: 12px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      background: #050507;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body class="text-zinc-300 antialiased min-h-screen py-8 px-4 flex flex-col justify-between">
+
+  <div class="max-w-3xl mx-auto w-full">
+    
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
+      <div>
+        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ SECURE LOCAL STORAGE ✦</span>
+        <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase tracking-wider mt-0.5">
+          DARK // VAULT NOTE
+        </h1>
+      </div>
+      <div class="text-right">
+        <span id="save-status" class="text-[10px] text-emerald-400 font-mono tracking-widest uppercase flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          SAVED
+        </span>
+        <p id="word-count" class="text-[11px] text-zinc-500 mt-1">0 WORDS | 0 CHARS</p>
+      </div>
+    </header>
+
+    <!-- Note Pad -->
+    <main class="sigil-card p-4 md:p-6 mb-4">
+      <input 
+        type="text" 
+        id="note-title" 
+        placeholder="UNTITLED ENTRY..." 
+        oninput="handleInput()"
+        class="w-full bg-transparent text-white font-bold text-lg md:text-xl border-b border-zinc-800/80 pb-3 mb-4 outline-none placeholder:text-zinc-700 tracking-wide font-mono"
+      >
+      <textarea 
+        id="note-body" 
+        rows="16" 
+        placeholder="เริ่มพิมพ์ข้อความตรงนี้... ระบบจะบันทึกทุกตัวอักษรลงเครื่องให้อัตโนมัติทันที ปิดเว็บแล้วเปิดใหม่ข้อมูลไม่หาย..."
+        oninput="handleInput()"
+        class="w-full bg-transparent text-zinc-200 placeholder:text-zinc-700 text-sm leading-relaxed outline-none resize-none font-mono"
+      ></textarea>
+    </main>
+
+    <!-- Toolbar Actions -->
+    <footer class="flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex gap-2">
+        <button onclick="downloadNote()" class="px-3 py-2 border border-zinc-700 hover:border-zinc-300 bg-zinc-950 text-zinc-300 hover:text-white transition-all uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          EXPORT .TXT
+        </button>
+        <button onclick="clearNote()" class="px-3 py-2 border border-zinc-800 hover:border-red-500/50 bg-zinc-950 text-zinc-500 hover:text-red-400 transition-all uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          CLEAR
+        </button>
+      </div>
+      <span class="text-[10px] text-zinc-600 tracking-widest uppercase">ENCRYPTED AT BROWSER LEVEL</span>
+    </footer>
+
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'cyber_gothic_note_vault';
+
+    // โหลดข้อมูลเก่าที่เคยเซฟไว้
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      if (saved.title) document.getElementById('note-title').value = saved.title;
+      if (saved.body) document.getElementById('note-body').value = saved.body;
+      updateStats();
+      lucide.createIcons();
+    });
+
+    // ฟังก์ชันบันทึกอัตโนมัติ Real-time
+    function handleInput() {
+      const title = document.getElementById('note-title').value;
+      const body = document.getElementById('note-body').value;
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ title, body }));
+
+      // อัปเดตสถานะการเซฟ
+      const status = document.getElementById('save-status');
+      status.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> SAVING...`;
+      status.className = "text-[10px] text-amber-400 font-mono tracking-widest uppercase flex items-center gap-1";
+
+      setTimeout(() => {
+        status.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> SAVED`;
+        status.className = "text-[10px] text-emerald-400 font-mono tracking-widest uppercase flex items-center gap-1";
+      }, 400);
+
+      updateStats();
+    }
+
+    function updateStats() {
+      const body = document.getElementById('note-body').value;
+      const chars = body.length;
+      const words = body.trim() ? body.trim().split(/\s+/).length : 0;
+      document.getElementById('word-count').innerText = `${words} WORDS | ${chars} CHARS`;
+    }
+
+    function downloadNote() {
+      const title = document.getElementById('note-title').value.trim() || 'untitled-entry';
+      const body = document.getElementById('note-body').value;
+      const content = `${title.toUpperCase()}\n${'='.repeat(title.length)}\n\n${body}`;
+
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${title.toLowerCase().replace(/\s+/g, '-')}.txt`;
+      a.click();
+    }
+
+    function clearNote() {
+      if (confirm('DELETE CURRENT NOTE ENTRY?')) {
+        document.getElementById('note-title').value = '';
+        document.getElementById('note-body').value = '';
+        localStorage.removeItem(STORAGE_KEY);
+        updateStats();
+      }
+    }
+  </script>
+</body>
+</html>
