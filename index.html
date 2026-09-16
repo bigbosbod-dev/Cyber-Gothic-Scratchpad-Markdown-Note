@@ -3,19 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GOTHIC // STUDY & KEEP (CLOUD SYNC)</title>
+  <title>GOTHIC // STUDY & KEEP</title>
   
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- CryptoJS for Local End-to-End Encryption -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-  <!-- Supabase JS Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Prompt:wght@300;400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Prompt:wght@300;400;500;600&display=swap');
     body {
       font-family: 'Prompt', sans-serif;
     }
@@ -38,268 +33,312 @@
     }
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-300 min-h-screen flex flex-col font-sans selection:bg-rose-950 selection:text-rose-200">
+<body class="bg-zinc-950 text-zinc-300 min-h-screen flex flex-col justify-between selection:bg-rose-950 selection:text-rose-200">
 
-  <!-- ================= AUTH OVERLAY (EMAIL & PASSWORD) ================= -->
-  <div id="vault-lock-screen" class="fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-md w-full shadow-2xl space-y-5">
-      <div class="text-center space-y-2">
-        <div class="inline-flex p-3 rounded-2xl bg-zinc-800/80 border border-zinc-700 text-rose-500">
-          <i data-lucide="cloud-lock" class="w-8 h-8"></i>
+  <!-- ================= AUTH / LOGIN OVERLAY ================= -->
+  <div id="vault-auth-screen" class="fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-7 max-w-sm w-full shadow-2xl space-y-4">
+      <div class="space-y-1">
+        <div class="text-xs font-mono-code text-rose-500 uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="w-4 h-4"></i> GOTHIC // SECURE VAULT
         </div>
-        <h2 class="text-xl font-mono-code font-bold text-zinc-100 uppercase tracking-wider">GOTHIC // CLOUD VAULT</h2>
-        <p class="text-xs text-zinc-400">เข้าสู่ระบบด้วย Email เพื่อเชื่อมต่อและซิงก์ข้อมูลข้ามอุปกรณ์</p>
+        <h2 class="text-lg font-bold text-zinc-100 font-mono-code">AUTHENTICATION</h2>
+        <p class="text-xs text-zinc-500">ระบุอีเมลและ Master Key เพื่อถอดรหัสข้อมูล</p>
       </div>
-      
+
       <div class="space-y-3 font-mono-code">
         <div>
-          <label class="block text-[11px] text-zinc-500 mb-1">ACCOUNT EMAIL</label>
-          <input type="email" id="auth-email-input" placeholder="student@example.com" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 px-4 py-2.5 rounded-xl focus:border-rose-600 focus:outline-none text-xs" />
+          <label class="block text-[11px] text-zinc-500 mb-1">USER EMAIL</label>
+          <input type="email" id="auth-email-input" placeholder="bigbosbod@gmail.com" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 px-3.5 py-2 rounded-xl focus:border-rose-600 focus:outline-none text-xs" />
         </div>
         <div>
-          <label class="block text-[11px] text-zinc-500 mb-1">MASTER PASSWORD</label>
-          <input type="password" id="auth-password-input" placeholder="••••••••••••" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 px-4 py-2.5 rounded-xl focus:border-rose-600 focus:outline-none text-xs" />
-          <p id="auth-status-msg" class="text-xs text-rose-500 mt-1.5 hidden"></p>
+          <label class="block text-[11px] text-zinc-500 mb-1">VAULT KEY (PASSWORD)</label>
+          <input type="password" id="auth-key-input" placeholder="••••••••••••" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 px-3.5 py-2 rounded-xl focus:border-rose-600 focus:outline-none text-xs" />
+          <p id="auth-error-hint" class="text-[11px] text-rose-500 mt-1 hidden">รหัสผ่านไม่ถูกต้อง หรือข้อมูลถูกเข้ารหัสด้วยกุญแจอื่น</p>
         </div>
-        <div class="flex gap-2 pt-2">
-          <button onclick="handleCloudSignIn()" id="btn-signin" class="flex-1 bg-rose-700 hover:bg-rose-600 text-white font-medium py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5">
-            <i data-lucide="log-in" class="w-4 h-4"></i> เข้าสู่ระบบ
-          </button>
-          <button onclick="handleCloudSignUp()" id="btn-signup" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5 border border-zinc-700">
-            <i data-lucide="user-plus" class="w-4 h-4"></i> สร้างบัญชีใหม่
-          </button>
-        </div>
+        <button onclick="unlockVaultAction()" class="w-full bg-rose-800 hover:bg-rose-700 text-white font-medium py-2 rounded-xl transition text-xs flex items-center justify-center gap-1.5 pt-2.5 pb-2.5">
+          <i data-lucide="unlock" class="w-3.5 h-3.5"></i> UNLOCK VAULT
+        </button>
       </div>
 
-      <div class="pt-2 text-center border-t border-zinc-800/80">
-        <span class="text-[10px] text-zinc-500 block">
-          * ข้อมูลเข้ารหัสจากฝั่งผู้ใช้ (Client-Side Encrypted) ก่อนส่งไปเก็บที่ Cloud
-        </span>
+      <div class="text-center pt-2 border-t border-zinc-800/60">
+        <button onclick="clearAndResetAll()" class="text-[10px] text-zinc-600 hover:text-rose-400 font-mono-code underline">
+          RESET LOCAL DATA
+        </button>
       </div>
     </div>
   </div>
 
   <!-- ================= TOP NAVIGATION BAR ================= -->
-  <header class="bg-zinc-900/70 border-b border-zinc-800/80 sticky top-0 z-40 backdrop-blur">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <span class="font-mono-code font-bold text-sm tracking-widest text-zinc-100 uppercase flex items-center gap-2">
-          <i data-lucide="terminal" class="w-4 h-4 text-rose-500"></i> GOTHIC // STUDY VAULT
-        </span>
-      </div>
+  <div>
+    <header class="bg-zinc-950/80 border-b border-zinc-800/80 sticky top-0 z-30 px-4 sm:px-6 py-2.5 backdrop-blur">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        
+        <!-- Left: Logo & Email Status -->
+        <div class="flex items-center gap-4">
+          <h1 class="font-mono-code font-bold text-sm tracking-widest text-zinc-100 uppercase flex items-center gap-2">
+            <span class="text-rose-600">&gt;_</span> GOTHIC // STUDY &amp; KEEP
+          </h1>
+          <span id="user-email-badge" class="text-[11px] font-mono-code text-emerald-500/90 hidden sm:inline-block">
+            bigbosbod@gmail.com (UNLOCKED)
+          </span>
+        </div>
 
-      <nav class="flex items-center gap-1 overflow-x-auto py-2">
-        <button onclick="switchTab('notes')" id="btn-tab-notes" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-mono-code transition bg-zinc-800 text-rose-400 border border-zinc-700/50 flex items-center gap-1.5">
-          <i data-lucide="file-text" class="w-3.5 h-3.5"></i> NOTES
-        </button>
-        <button onclick="switchTab('schedule')" id="btn-tab-schedule" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-mono-code transition text-zinc-400 hover:text-zinc-100 flex items-center gap-1.5">
-          <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TIMETABLE
-        </button>
-        <button onclick="switchTab('kanban')" id="btn-tab-kanban" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-mono-code transition text-zinc-400 hover:text-zinc-100 flex items-center gap-1.5">
-          <i data-lucide="kanban" class="w-3.5 h-3.5"></i> ASSIGNMENTS
-        </button>
-        <button onclick="switchTab('pomodoro')" id="btn-tab-pomodoro" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-mono-code transition text-zinc-400 hover:text-zinc-100 flex items-center gap-1.5">
-          <i data-lucide="timer" class="w-3.5 h-3.5"></i> POMODORO
-        </button>
-        <button onclick="switchTab('gpa')" id="btn-tab-gpa" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-mono-code transition text-zinc-400 hover:text-zinc-100 flex items-center gap-1.5">
-          <i data-lucide="calculator" class="w-3.5 h-3.5"></i> GPA SIMULATOR
-        </button>
-      </nav>
+        <!-- Middle: Nav Tabs -->
+        <nav class="flex items-center gap-1 font-mono-code text-xs overflow-x-auto">
+          <button onclick="switchTab('notes')" id="btn-tab-notes" class="px-3 py-1.5 rounded-lg transition bg-zinc-900 text-rose-400 border border-zinc-700/60 flex items-center gap-1.5">
+            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> KEEP NOTES
+          </button>
+          <button onclick="switchTab('trash')" id="btn-tab-trash" class="px-3 py-1.5 rounded-lg transition text-zinc-400 hover:text-zinc-200 flex items-center gap-1.5">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> TRASH (<span id="trash-count">0</span>)
+          </button>
+          <button onclick="switchTab('timetable')" id="btn-tab-timetable" class="px-3 py-1.5 rounded-lg transition text-zinc-400 hover:text-zinc-200 flex items-center gap-1.5">
+            <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TIMETABLE
+          </button>
+          <button onclick="switchTab('assignments')" id="btn-tab-assignments" class="px-3 py-1.5 rounded-lg transition text-zinc-400 hover:text-zinc-200 flex items-center gap-1.5">
+            <i data-lucide="kanban" class="w-3.5 h-3.5"></i> ASSIGNMENTS
+          </button>
+          <button onclick="switchTab('pomodoro')" id="btn-tab-pomodoro" class="px-3 py-1.5 rounded-lg transition text-zinc-400 hover:text-zinc-200 flex items-center gap-1.5">
+            <i data-lucide="timer" class="w-3.5 h-3.5"></i> POMODORO
+          </button>
+          <button onclick="switchTab('gpa')" id="btn-tab-gpa" class="px-3 py-1.5 rounded-lg transition text-zinc-400 hover:text-zinc-200 flex items-center gap-1.5">
+            <i data-lucide="calculator" class="w-3.5 h-3.5"></i> GPA SIMULATOR
+          </button>
+        </nav>
 
-      <div class="flex items-center gap-3">
-        <span id="user-session-badge" class="hidden sm:inline-block text-[11px] font-mono-code text-emerald-400/90"></span>
-        <button onclick="handleCloudSignOut()" class="text-xs font-mono-code px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-rose-400 transition flex items-center gap-1.5">
-          <i data-lucide="log-out" class="w-3.5 h-3.5"></i> LOGOUT
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- ================= MAIN CONTENT ================= -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full">
-
-    <!-- 1. NOTES TAB -->
-    <section id="tab-notes" class="space-y-4">
-      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-        <input type="text" id="note-title-input" placeholder="หัวข้อโน้ต หรือชื่องานด่วน..." class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-200 mb-2 focus:outline-none focus:border-zinc-700" />
-        <textarea id="note-content-input" rows="3" placeholder="จดบันทึกความคิด, โค้ด, หรือข้อมูลสำคัญ..." class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-300 focus:outline-none focus:border-zinc-700 resize-none font-mono-code"></textarea>
-        <div class="flex justify-between items-center mt-2">
-          <span id="sync-status" class="text-[10px] font-mono-code text-zinc-500">พร้อมใช้งาน</span>
-          <button onclick="saveNote()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-4 py-1.5 rounded-lg text-xs font-mono-code transition flex items-center gap-1.5">
-            <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i> SAVE & SYNC
+        <!-- Right: Lock & Logout -->
+        <div class="flex items-center gap-2 font-mono-code text-xs">
+          <button onclick="lockVaultScreen()" class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition flex items-center gap-1.5">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i> LOCK
+          </button>
+          <button onclick="logoutVault()" class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-rose-400 transition flex items-center gap-1.5">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i> LOGOUT
           </button>
         </div>
+
       </div>
+    </header>
 
-      <div id="notes-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-    </section>
+    <!-- ================= MAIN CONTENT VIEW ================= -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full space-y-6">
 
-    <!-- 2. TIMETABLE TAB -->
-    <section id="tab-schedule" class="hidden space-y-4">
-      <div class="flex justify-between items-center bg-zinc-900 border border-zinc-800 p-4 rounded-2xl">
-        <div>
-          <h2 class="text-sm font-mono-code font-bold text-zinc-100 uppercase">WEEKLY TIMETABLE</h2>
-          <p class="text-xs text-zinc-500">ตารางเรียนและห้องเรียนประจำสัปดาห์</p>
-        </div>
-        <button onclick="openModal('schedule-modal')" class="bg-rose-700 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-mono-code transition flex items-center gap-1">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มวิชา
-        </button>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-3" id="schedule-grid"></div>
-    </section>
-
-    <!-- 3. KANBAN TAB -->
-    <section id="tab-kanban" class="hidden space-y-4">
-      <div class="flex justify-between items-center bg-zinc-900 border border-zinc-800 p-4 rounded-2xl">
-        <div>
-          <h2 class="text-sm font-mono-code font-bold text-zinc-100 uppercase">PROJECTS & ASSIGNMENTS</h2>
-          <p class="text-xs text-zinc-500">ติดตามสถานะงานและการบ้าน</p>
-        </div>
-        <button onclick="openModal('task-modal')" class="bg-rose-700 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-mono-code transition flex items-center gap-1">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i> มอบหมายงาน
-        </button>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Column To Do -->
-        <div class="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex flex-col">
-          <div class="flex justify-between items-center mb-3">
-            <span class="text-xs font-mono-code text-zinc-400 flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-amber-500"></span> TO DO
-            </span>
-            <span id="count-todo" class="text-[10px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-400 font-mono-code">0</span>
+      <!-- 1. NOTES TAB -->
+      <section id="tab-notes" class="space-y-6">
+        <!-- Search & Filter Tags Bar -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div class="relative w-full sm:w-80">
+            <i data-lucide="search" class="w-4 h-4 text-zinc-500 absolute left-3.5 top-2.5"></i>
+            <input type="text" id="note-search-input" oninput="renderNotesList()" placeholder="ค้นหาบันทึกหรือแท็ก..." class="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700" />
           </div>
-          <div id="col-todo" class="space-y-2.5 flex-1 min-h-[300px]"></div>
-        </div>
-
-        <!-- Column In Progress -->
-        <div class="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex flex-col">
-          <div class="flex justify-between items-center mb-3">
-            <span class="text-xs font-mono-code text-zinc-400 flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-sky-500"></span> IN PROGRESS
-            </span>
-            <span id="count-progress" class="text-[10px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-400 font-mono-code">0</span>
+          <div class="flex items-center gap-1 font-mono-code text-xs self-start sm:self-auto">
+            <button onclick="filterNotesByTag('ALL')" class="px-2.5 py-1 rounded bg-zinc-800 text-zinc-200 border border-zinc-700">#ALL</button>
+            <button onclick="filterNotesByTag('GENERAL')" class="px-2.5 py-1 rounded bg-zinc-950 text-zinc-400 hover:text-zinc-200 border border-zinc-800">#GENERAL</button>
+            <button onclick="filterNotesByTag('TEST')" class="px-2.5 py-1 rounded bg-zinc-950 text-zinc-400 hover:text-zinc-200 border border-zinc-800">#TEST</button>
           </div>
-          <div id="col-progress" class="space-y-2.5 flex-1 min-h-[300px]"></div>
         </div>
 
-        <!-- Column Done -->
-        <div class="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex flex-col">
-          <div class="flex justify-between items-center mb-3">
-            <span class="text-xs font-mono-code text-zinc-400 flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> COMPLETED
-            </span>
-            <span id="count-done" class="text-[10px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-400 font-mono-code">0</span>
-          </div>
-          <div id="col-done" class="space-y-2.5 flex-1 min-h-[300px]"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 4. POMODORO TAB -->
-    <section id="tab-pomodoro" class="hidden space-y-4">
-      <div class="max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center space-y-6">
-        <div>
-          <span class="text-xs font-mono-code text-zinc-500 uppercase tracking-widest">FOCUS ENGINE</span>
-          <h2 class="text-6xl font-mono-code font-bold text-zinc-100 my-4" id="pomodoro-timer">25:00</h2>
-          <p id="pomodoro-mode" class="text-xs text-rose-500 font-mono-code uppercase">DEEP FOCUS SESSION</p>
-        </div>
-
-        <input type="text" id="pomodoro-tag" placeholder="ชื่อวิชาที่กำลังอ่าน เช่น Database..." class="w-full bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 px-3 py-2 rounded-xl text-center focus:outline-none focus:border-zinc-700" />
-
-        <div class="flex justify-center items-center gap-3">
-          <button id="pomodoro-toggle-btn" onclick="togglePomodoro()" class="bg-rose-700 hover:bg-rose-600 text-white font-mono-code text-xs px-6 py-2.5 rounded-xl transition">
-            START
-          </button>
-          <button onclick="resetPomodoro()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono-code text-xs px-4 py-2.5 rounded-xl transition">
-            RESET
-          </button>
-        </div>
-      </div>
-
-      <div class="max-w-md mx-auto bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4">
-        <h4 class="text-xs font-mono-code text-zinc-400 mb-2">ประวัติเวลาอ่านหนังสือสะสม</h4>
-        <div id="pomodoro-logs" class="space-y-1.5 text-xs font-mono-code text-zinc-400"></div>
-      </div>
-    </section>
-
-    <!-- 5. GPA SIMULATOR TAB -->
-    <section id="tab-gpa" class="hidden space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
-          <div class="flex justify-between items-center">
-            <h3 class="text-xs font-mono-code font-bold text-zinc-200 uppercase">รายวิชาในภาคการศึกษาปัจจุบัน</h3>
-            <button onclick="addGpaCourseRow()" class="text-xs bg-zinc-800 text-zinc-300 hover:text-white px-2.5 py-1 rounded-lg transition font-mono-code">
-              + ADD COURSE
+        <!-- Note Input Area -->
+        <div class="max-w-3xl mx-auto bg-zinc-900/60 border border-zinc-800/90 rounded-2xl p-4 shadow-sm space-y-3">
+          <input type="text" id="note-title" placeholder="จดบันทึก หรือสร้าง To-do List... (รองรับ Markdown)" class="w-full bg-zinc-950 border border-zinc-800/80 rounded-xl px-4 py-2.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700" />
+          <textarea id="note-body" rows="3" placeholder="ข้อความรายละเอียดเนื้อหา..." class="w-full bg-zinc-950 border border-zinc-800/80 rounded-xl p-3 text-xs text-zinc-300 font-mono-code placeholder-zinc-600 focus:outline-none focus:border-zinc-700 resize-none"></textarea>
+          <div class="flex items-center justify-between pt-1">
+            <input type="text" id="note-tag-input" value="GENERAL" placeholder="TAG เช่น GENERAL" class="w-36 bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1 text-[11px] font-mono-code text-zinc-400 focus:outline-none" />
+            <button onclick="createNewNote()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-4 py-1.5 rounded-xl text-xs font-mono-code transition flex items-center gap-1.5 border border-zinc-700">
+              <i data-lucide="save" class="w-3.5 h-3.5"></i> SAVE ENCRYPTED NOTE
             </button>
           </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs font-mono-code">
-              <thead class="text-zinc-500 border-b border-zinc-800">
-                <tr>
-                  <th class="pb-2">COURSE</th>
-                  <th class="pb-2 w-24">CREDITS</th>
-                  <th class="pb-2 w-28">EST. GRADE</th>
-                  <th class="pb-2 w-8"></th>
-                </tr>
-              </thead>
-              <tbody id="gpa-table-body" class="divide-y divide-zinc-800/50"></tbody>
-            </table>
+        </div>
+
+        <!-- Notes Grid Display -->
+        <div>
+          <div class="text-xs font-mono-code text-zinc-500 mb-3 tracking-wider">ALL NOTES</div>
+          <div id="notes-list-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <!-- Notes Render Here -->
           </div>
-          <button onclick="calculateTermGpa()" class="w-full bg-rose-700 hover:bg-rose-600 text-white py-2 rounded-xl text-xs font-mono-code transition">
-            คำนวณ GPA เทอมนี้
+        </div>
+      </section>
+
+      <!-- 2. TRASH TAB -->
+      <section id="tab-trash" class="hidden space-y-4">
+        <div class="flex justify-between items-center bg-zinc-900/60 border border-zinc-800 p-4 rounded-2xl">
+          <div>
+            <h3 class="text-xs font-mono-code text-zinc-200 uppercase font-bold">TRASH CAN</h3>
+            <p class="text-xs text-zinc-500">บันทึกที่ถูกลบชั่วคราว สามารถกู้คืนได้</p>
+          </div>
+          <button onclick="emptyTrashCan()" class="text-xs font-mono-code bg-zinc-950 border border-zinc-800 hover:border-rose-800 text-rose-400 px-3 py-1.5 rounded-lg transition">
+            EMPTY TRASH
+          </button>
+        </div>
+        <div id="trash-list-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+      </section>
+
+      <!-- 3. TIMETABLE TAB -->
+      <section id="tab-timetable" class="hidden space-y-4">
+        <div class="flex justify-between items-center bg-zinc-900 border border-zinc-800 p-4 rounded-2xl">
+          <div>
+            <h3 class="text-xs font-mono-code font-bold text-zinc-100 uppercase">WEEKLY TIMETABLE</h3>
+            <p class="text-xs text-zinc-500">ตารางเรียนและห้องเรียนประจำวัน</p>
+          </div>
+          <button onclick="openModal('schedule-modal')" class="bg-rose-800 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-mono-code transition flex items-center gap-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มคาบเรียน
+          </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3" id="schedule-grid"></div>
+      </section>
+
+      <!-- 4. ASSIGNMENTS (KANBAN) TAB -->
+      <section id="tab-assignments" class="hidden space-y-4">
+        <div class="flex justify-between items-center bg-zinc-900 border border-zinc-800 p-4 rounded-2xl">
+          <div>
+            <h3 class="text-xs font-mono-code font-bold text-zinc-100 uppercase">ASSIGNMENTS &amp; PROJECTS</h3>
+            <p class="text-xs text-zinc-500">ติดตามงานและการบ้าน</p>
+          </div>
+          <button onclick="openModal('task-modal')" class="bg-rose-800 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-mono-code transition flex items-center gap-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> มอบหมายงาน
           </button>
         </div>
 
-        <div class="space-y-4">
-          <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl">
-            <div class="text-[11px] font-mono-code text-zinc-500 uppercase">ESTIMATED TERM GPA</div>
-            <div id="output-term-gpa" class="text-4xl font-mono-code font-bold text-rose-500 mt-1">0.00</div>
-            <div id="output-term-credits" class="text-[11px] text-zinc-400 mt-1">0 หน่วยกิต</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Col: To Do -->
+          <div class="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex flex-col">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-mono-code text-zinc-400 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span> TO DO
+              </span>
+              <span id="count-todo" class="text-[10px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-400 font-mono-code">0</span>
+            </div>
+            <div id="col-todo" class="space-y-2.5 flex-1 min-h-[280px]"></div>
           </div>
 
-          <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl space-y-3">
-            <h4 class="text-xs font-mono-code font-bold text-zinc-200 uppercase">GPAX TARGET SIMULATOR</h4>
-            <div class="space-y-2 text-xs font-mono-code">
-              <div>
-                <label class="text-[10px] text-zinc-500 block mb-1">GPAX สะสมเดิม</label>
-                <input type="number" step="0.01" id="sim-prev-gpax" placeholder="3.20" class="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-zinc-200" />
-              </div>
-              <div>
-                <label class="text-[10px] text-zinc-500 block mb-1">หน่วยกิตสะสมเดิม</label>
-                <input type="number" id="sim-prev-credits" placeholder="60" class="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-zinc-200" />
-              </div>
-              <div>
-                <label class="text-[10px] text-zinc-500 block mb-1">เป้าหมาย GPAX ที่ต้องการ</label>
-                <input type="number" step="0.01" id="sim-goal-gpax" placeholder="3.50" class="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-zinc-200" />
-              </div>
-              <div>
-                <label class="text-[10px] text-zinc-500 block mb-1">หน่วยกิตที่ลงในเทอมนี้</label>
-                <input type="number" id="sim-term-credits" placeholder="18" class="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-zinc-200" />
-              </div>
-              <button onclick="runGpaSimulation()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-2 rounded-lg transition text-xs font-mono-code">
-                SIMULATE
+          <!-- Col: In Progress -->
+          <div class="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex flex-col">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-mono-code text-zinc-400 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-sky-500"></span> IN PROGRESS
+              </span>
+              <span id="count-progress" class="text-[10px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-400 font-mono-code">0</span>
+            </div>
+            <div id="col-progress" class="space-y-2.5 flex-1 min-h-[280px]"></div>
+          </div>
+
+          <!-- Col: Done -->
+          <div class="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex flex-col">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-mono-code text-zinc-400 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> COMPLETED
+              </span>
+              <span id="count-done" class="text-[10px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-400 font-mono-code">0</span>
+            </div>
+            <div id="col-done" class="space-y-2.5 flex-1 min-h-[280px]"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. POMODORO TAB -->
+      <section id="tab-pomodoro" class="hidden space-y-4">
+        <div class="max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center space-y-6">
+          <div>
+            <span class="text-xs font-mono-code text-zinc-500 uppercase tracking-widest">FOCUS SESSION</span>
+            <h2 class="text-6xl font-mono-code font-bold text-zinc-100 my-4" id="pomodoro-timer">25:00</h2>
+            <p id="pomodoro-mode" class="text-xs text-rose-500 font-mono-code uppercase">DEEP FOCUS</p>
+          </div>
+
+          <input type="text" id="pomodoro-tag" placeholder="วิชาที่กำลังอ่าน เช่น Database..." class="w-full bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 px-3 py-2 rounded-xl text-center focus:outline-none focus:border-zinc-700" />
+
+          <div class="flex justify-center items-center gap-3">
+            <button id="pomodoro-toggle-btn" onclick="togglePomodoro()" class="bg-rose-800 hover:bg-rose-700 text-white font-mono-code text-xs px-6 py-2.5 rounded-xl transition">
+              START
+            </button>
+            <button onclick="resetPomodoro()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono-code text-xs px-4 py-2.5 rounded-xl transition">
+              RESET
+            </button>
+          </div>
+        </div>
+
+        <div class="max-w-md mx-auto bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4">
+          <h4 class="text-xs font-mono-code text-zinc-400 mb-2">สถิติการทบทวนสะสม (นาที)</h4>
+          <div id="pomodoro-logs" class="space-y-1.5 text-xs font-mono-code text-zinc-400"></div>
+        </div>
+      </section>
+
+      <!-- 6. GPA SIMULATOR TAB -->
+      <section id="tab-gpa" class="hidden space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-xs font-mono-code font-bold text-zinc-200 uppercase">รายวิชาในภาคการศึกษาปัจจุบัน</h3>
+              <button onclick="addGpaCourseRow()" class="text-xs bg-zinc-800 text-zinc-300 hover:text-white px-2.5 py-1 rounded-lg transition font-mono-code">
+                + ADD COURSE
               </button>
-              <div id="sim-output-box" class="p-2.5 bg-zinc-950 rounded-lg text-zinc-400 text-[11px] border border-zinc-800 leading-relaxed font-sans">
-                ระบุข้อมูลเพื่อประเมินเกรดเป้าหมาย
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs font-mono-code">
+                <thead class="text-zinc-500 border-b border-zinc-800">
+                  <tr>
+                    <th class="pb-2">COURSE</th>
+                    <th class="pb-2 w-24">CREDITS</th>
+                    <th class="pb-2 w-28">EST. GRADE</th>
+                    <th class="pb-2 w-8"></th>
+                  </tr>
+                </thead>
+                <tbody id="gpa-table-body" class="divide-y divide-zinc-800/50"></tbody>
+              </table>
+            </div>
+            <button onclick="calculateTermGpa()" class="w-full bg-rose-800 hover:bg-rose-700 text-white py-2 rounded-xl text-xs font-mono-code transition">
+              คำนวณ GPA เทอมนี้
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl">
+              <div class="text-[11px] font-mono-code text-zinc-500 uppercase">ESTIMATED TERM GPA</div>
+              <div id="output-term-gpa" class="text-4xl font-mono-code font-bold text-rose-500 mt-1">0.00</div>
+              <div id="output-term-credits" class="text-[11px] text-zinc-400 mt-1">0 หน่วยกิต</div>
+            </div>
+
+            <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl space-y-3">
+              <h4 class="text-xs font-mono-code font-bold text-zinc-200 uppercase">GPAX TARGET SIMULATOR</h4>
+              <div class="space-y-2 text-xs font-mono-code">
+                <div>
+                  <label class="text-[10px] text-zinc-500 block mb-1">GPAX สะสมเดิม</label>
+                  <input type="number" step="0.01" id="sim-prev-gpax" placeholder="3.20" class="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-zinc-200" />
+                </div>
+                <div>
+                  <label class="text-[10px] text-zinc-500 block mb-1">หน่วยกิตสะสมเดิม</label>
+                  <input type="number" id="sim-prev-credits" placeholder="60" class="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-zinc-200" />
+                </div>
+                <div>
+                  <label class="text-[10px] text-zinc-500 block mb-1">เป้าหมาย GPAX รวม</label>
+                  <input type="number" step="0.01" id="sim-goal-gpax" placeholder="3.50" class="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-zinc-200" />
+                </div>
+                <div>
+                  <label class="text-[10px] text-zinc-500 block mb-1">หน่วยกิตเทอมนี้</label>
+                  <input type="number" id="sim-term-credits" placeholder="18" class="w-full bg-zinc-950 border border-zinc-800 p-2 rounded-lg text-zinc-200" />
+                </div>
+                <button onclick="runGpaSimulation()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-2 rounded-lg transition text-xs font-mono-code">
+                  SIMULATE
+                </button>
+                <div id="sim-output-box" class="p-2.5 bg-zinc-950 rounded-lg text-zinc-400 text-[11px] border border-zinc-800 leading-relaxed font-sans">
+                  ผลการจำลองเกรดจะแสดงที่นี่
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-  </main>
+    </main>
+  </div>
 
   <!-- ================= MODALS ================= -->
+  <!-- Schedule Modal -->
   <div id="schedule-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-5 space-y-3 font-sans">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-5 space-y-3">
       <h3 class="text-sm font-mono-code font-bold text-zinc-100 uppercase">ADD CLASS SCHEDULE</h3>
       <div class="space-y-2 text-xs">
         <div>
           <label class="text-zinc-500 block mb-1">ชื่อวิชา</label>
-          <input type="text" id="sched-input-name" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-zinc-200" placeholder="เช่น Computer Network" />
+          <input type="text" id="sched-input-name" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-zinc-200" placeholder="Computer Systems" />
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -330,22 +369,23 @@
       </div>
       <div class="flex justify-end gap-2 pt-2">
         <button onclick="closeModal('schedule-modal')" class="px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200">CANCEL</button>
-        <button onclick="saveScheduleItem()" class="bg-rose-700 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-mono-code">SAVE</button>
+        <button onclick="saveScheduleItem()" class="bg-rose-800 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-mono-code">SAVE</button>
       </div>
     </div>
   </div>
 
+  <!-- Task Modal -->
   <div id="task-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-5 space-y-3 font-sans">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-5 space-y-3">
       <h3 class="text-sm font-mono-code font-bold text-zinc-100 uppercase">ADD ASSIGNMENT</h3>
       <div class="space-y-2 text-xs">
         <div>
-          <label class="text-zinc-500 block mb-1">ชื่องาน / กิจกรรม</label>
-          <input type="text" id="task-input-title" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-zinc-200" placeholder="เช่น รายงาน Final Project" />
+          <label class="text-zinc-500 block mb-1">ชื่องาน</label>
+          <input type="text" id="task-input-title" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-zinc-200" placeholder="ส่งงานสไลด์พรีเซนต์" />
         </div>
         <div>
-          <label class="text-zinc-500 block mb-1">วิชา / หมวดหมู่</label>
-          <input type="text" id="task-input-subject" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-zinc-200" placeholder="CPE 202" />
+          <label class="text-zinc-500 block mb-1">วิชา / รหัสวิชา</label>
+          <input type="text" id="task-input-subject" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-zinc-200" placeholder="SE 101" />
         </div>
         <div>
           <label class="text-zinc-500 block mb-1">กำหนดส่ง</label>
@@ -354,309 +394,304 @@
       </div>
       <div class="flex justify-end gap-2 pt-2">
         <button onclick="closeModal('task-modal')" class="px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200">CANCEL</button>
-        <button onclick="saveTaskItem()" class="bg-rose-700 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-mono-code">ASSIGN</button>
+        <button onclick="saveTaskItem()" class="bg-rose-800 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-mono-code">ASSIGN</button>
       </div>
     </div>
   </div>
 
-  <!-- ================= JAVASCRIPT ================= -->
+  <!-- ================= JAVASCRIPT CORE ================= -->
   <script>
-    // -------------------------------------------------------------
-    // 1. SUPABASE CONFIGURATION (เปลี่ยน URL และ ANON KEY ตรงนี้)
-    // -------------------------------------------------------------
-    const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
-    const SUPABASE_ANON_KEY = "YOUR_ANON_KEY_HERE";
-    
-    // เริ่มต้นเชื่อมต่อ Supabase Client
-    const supabase = (SUPABASE_URL.includes("YOUR_PROJECT_ID")) 
-      ? null 
-      : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // --- State & Fallback Structures ---
+    let activeUserEmail = localStorage.getItem('active_user_email') || 'bigbosbod@gmail.com';
+    let activeVaultPassword = null;
+    let currentSelectedTag = 'ALL';
 
-    // Default Fallback Data Structure
-    const defaultData = {
-      notes: [],
+    const defaultVaultState = {
+      notes: [
+        { id: 1, title: 'hi', content: '', tag: 'TEST', date: '16/9/2569' },
+        { id: 2, title: 'UNTITLED', content: 'sdtstaoT', tag: 'GENERAL', date: '16/9/2569' },
+        { id: 3, title: '123456', content: '', tag: 'GENERAL', date: '16/9/2569' }
+      ],
+      trash: [],
       schedules: [],
       tasks: [],
       studyStats: {},
-      gpaProfile: {
-        currentGpax: 3.25,
-        currentCredits: 45,
+      gpa_profile: {
         targetGpax: 3.50,
+        currentGpax: 3.20,
+        currentCredits: 60,
         termCredits: 18,
-        courses: [
-          { name: 'Computer Architecture', credits: 3, grade: 'A' },
-          { name: 'Operating Systems', credits: 3, grade: 'B+' }
-        ]
+        courses: []
       }
     };
 
-    let currentUser = null;
-    let currentMasterKey = null;
-    let vaultData = JSON.parse(JSON.stringify(defaultData));
+    let vaultState = JSON.parse(JSON.stringify(defaultVaultState));
     const GRADE_POINTS = { 'A': 4.0, 'B+': 3.5, 'B': 3.0, 'C+': 2.5, 'C': 2.0, 'D+': 1.5, 'D': 1.0, 'F': 0.0 };
 
-    // --- Safe Crypto Utilities ---
-    function encryptPayload(dataObj, secretKey) {
+    // --- Safe Encryption & Decryption (Row 561 Patched) ---
+    function encryptData(dataObj, password) {
       try {
         const text = JSON.stringify(dataObj);
-        return CryptoJS.AES.encrypt(text, secretKey).toString();
-      } catch (e) {
+        return CryptoJS.AES.encrypt(text, password).toString();
+      } catch (err) {
         return null;
       }
     }
 
-    function decryptPayload(cipherText, secretKey) {
-      if (!cipherText || typeof cipherText !== 'string' || !cipherText.trim()) return null;
+    function decryptData(cipherText, password) {
+      if (!cipherText || typeof cipherText !== 'string' || !cipherText.trim()) {
+        return null;
+      }
       try {
-        const bytes = CryptoJS.AES.decrypt(cipherText, secretKey);
-        const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
-        if (!decryptedStr || !decryptedStr.trim()) return null;
-        return JSON.parse(decryptedStr);
+        const bytes = CryptoJS.AES.decrypt(cipherText, password);
+        const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+        
+        // จุดป้องกัน Unexpected end of JSON input
+        if (!decryptedText || !decryptedText.trim()) {
+          return null;
+        }
+        return JSON.parse(decryptedText);
       } catch (e) {
         return null;
       }
     }
 
-    // --- Sync & Cloud Database Operations ---
-    async function syncCloudVault() {
-      const statusEl = document.getElementById('sync-status');
-      if (statusEl) statusEl.innerText = "กำลังซิงก์...";
-
-      if (!supabase) {
-        // Fallback เก็บใน LocalStorage กรณีไม่ได้ต่อ Cloud
-        if (currentMasterKey) {
-          const cipher = encryptPayload(vaultData, currentMasterKey);
-          if (cipher) localStorage.setItem('local_vault_fallback', cipher);
-        }
-        if (statusEl) statusEl.innerText = "บันทึกในเครื่อง (Offline)";
-        return;
-      }
-
-      if (!currentUser || !currentMasterKey) return;
-
-      const encryptedData = encryptPayload(vaultData, currentMasterKey);
-      if (!encryptedData) return;
-
-      const { error } = await supabase
-        .from('user_vaults')
-        .upsert({
-          user_id: currentUser.id,
-          encrypted_data: encryptedData,
-          updated_at: new Date()
-        });
-
-      if (statusEl) {
-        statusEl.innerText = error ? "ซิงก์ล้มเหลว" : "ซิงก์คลาวด์แล้ว";
+    function syncSaveAllData() {
+      if (!activeVaultPassword) return;
+      const cipher = encryptData(vaultState, activeVaultPassword);
+      if (cipher) {
+        localStorage.setItem(`vault_data_${activeUserEmail}`, cipher);
       }
     }
 
-    async function fetchCloudVault() {
-      const statusEl = document.getElementById('sync-status');
-      if (!supabase || !currentUser) {
-        // โหลดจาก LocalStorage ถ้าไม่มี Cloud
-        const cached = localStorage.getItem('local_vault_fallback');
-        if (cached && currentMasterKey) {
-          const parsed = decryptPayload(cached, currentMasterKey);
-          if (parsed) vaultData = sanitizeVaultData(parsed);
-        }
-        return;
+    function syncLoadAllData(password) {
+      const raw = localStorage.getItem(`vault_data_${activeUserEmail}`);
+      if (!raw) {
+        // บันทึกค่าเริ่มต้นถ้ายังไม่มีข้อมูล
+        vaultState = JSON.parse(JSON.stringify(defaultVaultState));
+        syncSaveAllData();
+        return true;
       }
 
-      const { data, error } = await supabase
-        .from('user_vaults')
-        .select('encrypted_data')
-        .eq('user_id', currentUser.id)
-        .single();
-
-      if (data && data.encrypted_data) {
-        const decrypted = decryptPayload(data.encrypted_data, currentMasterKey);
-        if (decrypted) {
-          vaultData = sanitizeVaultData(decrypted);
-        }
-      } else {
-        // บัญชีใหม่ ส่ง Default ขึ้น Cloud
-        await syncCloudVault();
+      const parsed = decryptData(raw, password);
+      if (!parsed) {
+        return false;
       }
 
-      if (statusEl) statusEl.innerText = "ข้อมูลตรงกับ Cloud";
-    }
-
-    function sanitizeVaultData(raw) {
-      return {
-        notes: Array.isArray(raw.notes) ? raw.notes : [],
-        schedules: Array.isArray(raw.schedules) ? raw.schedules : [],
-        tasks: Array.isArray(raw.tasks) ? raw.tasks : [],
-        studyStats: raw.studyStats || {},
-        gpaProfile: raw.gpaProfile || defaultData.gpaProfile
+      // Safe Merge กับ default ป้องกันฟิลด์ขาดหาย
+      vaultState = {
+        notes: Array.isArray(parsed.notes) ? parsed.notes : [],
+        trash: Array.isArray(parsed.trash) ? parsed.trash : [],
+        schedules: Array.isArray(parsed.schedules) ? parsed.schedules : [],
+        tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
+        studyStats: parsed.studyStats || {},
+        gpa_profile: parsed.gpa_profile || defaultVaultState.gpa_profile
       };
+      return true;
     }
 
     // --- Authentication Actions ---
-    async function handleCloudSignIn() {
+    function unlockVaultAction() {
       const email = document.getElementById('auth-email-input').value.trim();
-      const password = document.getElementById('auth-password-input').value;
-      const status = document.getElementById('auth-status-msg');
+      const pass = document.getElementById('auth-key-input').value;
+      const hint = document.getElementById('auth-error-hint');
 
-      if (!email || !password) {
-        status.innerText = "กรุณากรอกทั้งอีเมลและรหัสผ่าน";
-        status.classList.remove('hidden');
+      if (!email || !pass) {
+        hint.innerText = "กรุณากรอกอีเมลและ Master Key";
+        hint.classList.remove('hidden');
         return;
       }
 
-      if (!supabase) {
-        // โหมด Offline ทดสอบ
-        currentUser = { id: 'offline-user', email };
-        currentMasterKey = password;
-        onLoginSuccess(email);
+      activeUserEmail = email;
+      localStorage.setItem('active_user_email', email);
+
+      const success = syncLoadAllData(pass);
+      if (!success) {
+        hint.innerText = "Master Key ไม่ถูกต้อง หรือถอดรหัสไม่สำเร็จ";
+        hint.classList.remove('hidden');
         return;
       }
 
-      status.innerText = "กำลังยืนยันตัวตน...";
-      status.classList.remove('hidden');
+      activeVaultPassword = pass;
+      hint.classList.add('hidden');
+      document.getElementById('vault-auth-screen').classList.add('hidden');
+      document.getElementById('user-email-badge').innerText = `${email} (UNLOCKED)`;
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        status.innerText = error.message;
-        return;
-      }
-
-      currentUser = data.user;
-      currentMasterKey = password;
-      await onLoginSuccess(email);
+      renderNotesList();
+      renderTrashList();
+      renderScheduleList();
+      renderTasksList();
+      renderPomodoroLogs();
+      renderGpaView();
+      lucide.createIcons();
     }
 
-    async function handleCloudSignUp() {
-      const email = document.getElementById('auth-email-input').value.trim();
-      const password = document.getElementById('auth-password-input').value;
-      const status = document.getElementById('auth-status-msg');
-
-      if (!email || !password) {
-        status.innerText = "กรุณากรอกทั้งอีเมลและรหัสผ่าน";
-        status.classList.remove('hidden');
-        return;
-      }
-
-      if (!supabase) {
-        alert("กรุณาใส่ Supabase URL และ Key ก่อนเพื่อสมัครบัญชีจริง");
-        return;
-      }
-
-      status.innerText = "กำลังสร้างบัญชี...";
-      status.classList.remove('hidden');
-
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        status.innerText = error.message;
-        return;
-      }
-
-      currentUser = data.user;
-      currentMasterKey = password;
-      alert("สร้างบัญชีสำเร็จ! ยินดีต้อนรับสู่ระบบ");
-      await onLoginSuccess(email);
+    function lockVaultScreen() {
+      activeVaultPassword = null;
+      document.getElementById('auth-key-input').value = '';
+      document.getElementById('auth-error-hint').classList.add('hidden');
+      document.getElementById('vault-auth-screen').classList.remove('hidden');
     }
 
-    async function onLoginSuccess(email) {
-      document.getElementById('vault-lock-screen').classList.add('hidden');
-      document.getElementById('user-session-badge').innerText = `${email} (SYNCED)`;
-      await fetchCloudVault();
-      renderAllViews();
+    function logoutVault() {
+      lockVaultScreen();
+      document.getElementById('auth-email-input').value = '';
     }
 
-    async function handleCloudSignOut() {
-      if (supabase) await supabase.auth.signOut();
-      currentUser = null;
-      currentMasterKey = null;
-      vaultData = JSON.parse(JSON.stringify(defaultData));
-      document.getElementById('auth-password-input').value = '';
-      document.getElementById('auth-status-msg').classList.add('hidden');
-      document.getElementById('user-session-badge').innerText = '';
-      document.getElementById('vault-lock-screen').classList.remove('hidden');
+    function clearAndResetAll() {
+      if (confirm('ต้องการล้างข้อมูลทั้งหมดในเครื่องและเริ่มใหม่ใช่หรือไม่?')) {
+        localStorage.clear();
+        location.reload();
+      }
     }
 
-    // --- UI Tabs & Modals ---
+    // --- Navigation Tabs ---
     function switchTab(tabId) {
-      ['notes', 'schedule', 'kanban', 'pomodoro', 'gpa'].forEach(t => {
+      ['notes', 'trash', 'timetable', 'assignments', 'pomodoro', 'gpa'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.add('hidden');
         const btn = document.getElementById(`btn-tab-${t}`);
-        btn.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-mono-code transition text-zinc-400 hover:text-zinc-100 flex items-center gap-1.5';
+        if (btn) btn.className = 'px-3 py-1.5 rounded-lg transition text-zinc-400 hover:text-zinc-200 flex items-center gap-1.5';
       });
       document.getElementById(`tab-${tabId}`).classList.remove('hidden');
       const activeBtn = document.getElementById(`btn-tab-${tabId}`);
-      activeBtn.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-mono-code transition bg-zinc-800 text-rose-400 border border-zinc-700/50 flex items-center gap-1.5';
+      if (activeBtn) activeBtn.className = 'px-3 py-1.5 rounded-lg transition bg-zinc-900 text-rose-400 border border-zinc-700/60 flex items-center gap-1.5';
       lucide.createIcons();
     }
 
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
 
-    // --- 1. Notes Logic ---
-    function renderNotes() {
-      const container = document.getElementById('notes-grid');
+    // --- 1. Notes Functionality ---
+    function renderNotesList() {
+      const container = document.getElementById('notes-list-grid');
+      const query = (document.getElementById('note-search-input').value || '').toLowerCase();
       container.innerHTML = '';
-      vaultData.notes.forEach(note => {
-        const el = document.createElement('div');
-        el.className = 'bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex flex-col justify-between group';
-        el.innerHTML = `
+
+      const filtered = vaultState.notes.filter(n => {
+        const matchesTag = currentSelectedTag === 'ALL' || (n.tag || 'GENERAL').toUpperCase() === currentSelectedTag;
+        const matchesSearch = (n.title || '').toLowerCase().includes(query) || (n.content || '').toLowerCase().includes(query);
+        return matchesTag && matchesSearch;
+      });
+
+      filtered.forEach(note => {
+        const card = document.createElement('div');
+        card.className = 'bg-zinc-950 border border-zinc-800/80 rounded-xl p-4 flex flex-col justify-between hover:border-zinc-700 transition space-y-3';
+        card.innerHTML = `
           <div>
-            <div class="flex justify-between items-start mb-2">
+            <div class="flex justify-between items-start">
               <span class="font-bold text-xs text-zinc-100 font-mono-code">${note.title || 'UNTITLED'}</span>
-              <button onclick="deleteNote(${note.id})" class="text-zinc-600 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition">
+              <button onclick="moveNoteToTrash(${note.id})" class="text-zinc-600 hover:text-rose-500 transition">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
             </div>
-            <p class="text-xs text-zinc-400 whitespace-pre-wrap font-mono-code leading-relaxed">${note.content}</p>
+            <div class="text-[11px] text-zinc-500 font-mono-code mt-0.5">#${note.tag || 'GENERAL'}</div>
+            <p class="text-xs text-zinc-400 whitespace-pre-wrap font-mono-code mt-2 leading-relaxed">${note.content || ''}</p>
           </div>
-          <div class="text-[10px] text-zinc-600 mt-3 font-mono-code">${note.date}</div>
+          <div class="text-[10px] text-zinc-600 font-mono-code">${note.date}</div>
         `;
-        container.appendChild(el);
+        container.appendChild(card);
       });
+      document.getElementById('trash-count').innerText = vaultState.trash.length;
       lucide.createIcons();
     }
 
-    async function saveNote() {
-      const title = document.getElementById('note-title-input').value.trim();
-      const content = document.getElementById('note-content-input').value.trim();
-      if (!content && !title) return;
+    function createNewNote() {
+      const title = document.getElementById('note-title').value.trim();
+      const content = document.getElementById('note-body').value.trim();
+      const tag = (document.getElementById('note-tag-input').value.trim() || 'GENERAL').toUpperCase();
 
-      vaultData.notes.unshift({
+      if (!title && !content) return;
+
+      vaultState.notes.unshift({
         id: Date.now(),
         title,
         content,
+        tag,
         date: new Date().toLocaleDateString('th-TH')
       });
-      renderNotes();
-      document.getElementById('note-title-input').value = '';
-      document.getElementById('note-content-input').value = '';
-      await syncCloudVault();
+      syncSaveAllData();
+      renderNotesList();
+      document.getElementById('note-title').value = '';
+      document.getElementById('note-body').value = '';
     }
 
-    async function deleteNote(id) {
-      vaultData.notes = vaultData.notes.filter(n => n.id !== id);
-      renderNotes();
-      await syncCloudVault();
+    function moveNoteToTrash(id) {
+      const idx = vaultState.notes.findIndex(n => n.id === id);
+      if (idx !== -1) {
+        vaultState.trash.push(vaultState.notes[idx]);
+        vaultState.notes.splice(idx, 1);
+        syncSaveAllData();
+        renderNotesList();
+        renderTrashList();
+      }
     }
 
-    // --- 2. Schedule Logic ---
+    function filterNotesByTag(tag) {
+      currentSelectedTag = tag;
+      renderNotesList();
+    }
+
+    // --- 2. Trash Functionality ---
+    function renderTrashList() {
+      const container = document.getElementById('trash-list-grid');
+      container.innerHTML = '';
+      vaultState.trash.forEach(note => {
+        const card = document.createElement('div');
+        card.className = 'bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between space-y-3';
+        card.innerHTML = `
+          <div>
+            <div class="font-bold text-xs text-zinc-300 font-mono-code">${note.title || 'UNTITLED'}</div>
+            <p class="text-xs text-zinc-500 font-mono-code mt-2">${note.content || ''}</p>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t border-zinc-900 text-[10px]">
+            <span class="text-zinc-600 font-mono-code">${note.date}</span>
+            <button onclick="restoreNoteFromTrash(${note.id})" class="text-zinc-400 hover:text-emerald-400 font-mono-code">RESTORE</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      document.getElementById('trash-count').innerText = vaultState.trash.length;
+      lucide.createIcons();
+    }
+
+    function restoreNoteFromTrash(id) {
+      const idx = vaultState.trash.findIndex(n => n.id === id);
+      if (idx !== -1) {
+        vaultState.notes.push(vaultState.trash[idx]);
+        vaultState.trash.splice(idx, 1);
+        syncSaveAllData();
+        renderNotesList();
+        renderTrashList();
+      }
+    }
+
+    function emptyTrashCan() {
+      if (confirm('ต้องการลบข้อมูลในถังขยะถาวรใช่หรือไม่?')) {
+        vaultState.trash = [];
+        syncSaveAllData();
+        renderTrashList();
+      }
+    }
+
+    // --- 3. Timetable Functionality ---
     const DAYS = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์'];
 
-    function renderSchedule() {
+    function renderScheduleList() {
       const container = document.getElementById('schedule-grid');
       container.innerHTML = '';
-
       DAYS.forEach(day => {
-        const dayClasses = (vaultData.schedules || []).filter(s => s.day === day);
+        const items = vaultState.schedules.filter(s => s.day === day);
         const col = document.createElement('div');
         col.className = 'bg-zinc-900/60 border border-zinc-800 p-3 rounded-2xl flex flex-col min-h-[260px]';
         col.innerHTML = `
           <div class="text-xs font-mono-code text-zinc-400 pb-2 border-b border-zinc-800 flex justify-between">
             <span>${day}</span>
-            <span class="text-rose-500">${dayClasses.length}</span>
+            <span class="text-rose-500">${items.length}</span>
           </div>
           <div class="space-y-2 mt-2 flex-1">
-            ${dayClasses.map(c => `
+            ${items.map(c => `
               <div class="bg-zinc-950 border border-zinc-800/80 p-2.5 rounded-xl group relative">
-                <button onclick="deleteSchedule(${c.id})" class="absolute top-2 right-2 text-zinc-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition">
+                <button onclick="deleteScheduleItem(${c.id})" class="absolute top-2 right-2 text-zinc-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition">
                   <i data-lucide="x" class="w-3 h-3"></i>
                 </button>
                 <div class="text-xs font-semibold text-zinc-200">${c.name}</div>
@@ -671,7 +706,7 @@
       lucide.createIcons();
     }
 
-    async function saveScheduleItem() {
+    function saveScheduleItem() {
       const name = document.getElementById('sched-input-name').value.trim();
       const day = document.getElementById('sched-input-day').value;
       const room = document.getElementById('sched-input-room').value.trim();
@@ -680,22 +715,22 @@
 
       if (!name) return alert('โปรดกรอกชื่อวิชา');
 
-      vaultData.schedules.push({ id: Date.now(), name, day, room, start, end });
+      vaultState.schedules.push({ id: Date.now(), name, day, room, start, end });
+      syncSaveAllData();
       closeModal('schedule-modal');
-      renderSchedule();
+      renderScheduleList();
       document.getElementById('sched-input-name').value = '';
       document.getElementById('sched-input-room').value = '';
-      await syncCloudVault();
     }
 
-    async function deleteSchedule(id) {
-      vaultData.schedules = vaultData.schedules.filter(s => s.id !== id);
-      renderSchedule();
-      await syncCloudVault();
+    function deleteScheduleItem(id) {
+      vaultState.schedules = vaultState.schedules.filter(s => s.id !== id);
+      syncSaveAllData();
+      renderScheduleList();
     }
 
-    // --- 3. Kanban Logic ---
-    function renderTasks() {
+    // --- 4. Assignments (Kanban) Functionality ---
+    function renderTasksList() {
       const cols = {
         todo: document.getElementById('col-todo'),
         progress: document.getElementById('col-progress'),
@@ -707,7 +742,7 @@
 
       let count = { todo: 0, progress: 0, done: 0 };
 
-      (vaultData.tasks || []).forEach(t => {
+      vaultState.tasks.forEach(t => {
         if (!count[t.status]) count[t.status] = 0;
         count[t.status]++;
 
@@ -716,7 +751,7 @@
         card.innerHTML = `
           <div class="flex justify-between items-start">
             <span class="text-[10px] font-mono-code px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">${t.subject}</span>
-            <button onclick="deleteTask(${t.id})" class="text-zinc-600 hover:text-rose-500">
+            <button onclick="deleteTaskItem(${t.id})" class="text-zinc-600 hover:text-rose-500">
               <i data-lucide="x" class="w-3 h-3"></i>
             </button>
           </div>
@@ -724,9 +759,9 @@
           <div class="flex items-center justify-between pt-1 border-t border-zinc-900 text-[10px] text-zinc-500">
             <span>ส่ง: ${t.due || '-'}</span>
             <div class="flex gap-1">
-              ${t.status !== 'todo' ? `<button onclick="moveTask(${t.id}, 'todo')" class="hover:text-zinc-200 px-1">◀</button>` : ''}
-              ${t.status !== 'progress' ? `<button onclick="moveTask(${t.id}, 'progress')" class="hover:text-zinc-200 px-1">⚡</button>` : ''}
-              ${t.status !== 'done' ? `<button onclick="moveTask(${t.id}, 'done')" class="hover:text-zinc-200 px-1">▶</button>` : ''}
+              ${t.status !== 'todo' ? `<button onclick="moveTaskStatus(${t.id}, 'todo')" class="hover:text-zinc-200 px-1">◀</button>` : ''}
+              ${t.status !== 'progress' ? `<button onclick="moveTaskStatus(${t.id}, 'progress')" class="hover:text-zinc-200 px-1">⚡</button>` : ''}
+              ${t.status !== 'done' ? `<button onclick="moveTaskStatus(${t.id}, 'done')" class="hover:text-zinc-200 px-1">▶</button>` : ''}
             </div>
           </div>
         `;
@@ -739,39 +774,39 @@
       lucide.createIcons();
     }
 
-    async function saveTaskItem() {
+    function saveTaskItem() {
       const title = document.getElementById('task-input-title').value.trim();
       const subject = document.getElementById('task-input-subject').value.trim() || 'GENERAL';
       const due = document.getElementById('task-input-due').value;
 
-      if (!title) return alert('โปรดระบุชื่องาน');
+      if (!title) return alert('โปรดกรอกชื่องาน');
 
-      vaultData.tasks.push({ id: Date.now(), title, subject, due, status: 'todo' });
+      vaultState.tasks.push({ id: Date.now(), title, subject, due, status: 'todo' });
+      syncSaveAllData();
       closeModal('task-modal');
-      renderTasks();
+      renderTasksList();
       document.getElementById('task-input-title').value = '';
       document.getElementById('task-input-subject').value = '';
-      await syncCloudVault();
     }
 
-    async function moveTask(id, nextStatus) {
-      vaultData.tasks = vaultData.tasks.map(t => t.id === id ? { ...t, status: nextStatus } : t);
-      renderTasks();
-      await syncCloudVault();
+    function moveTaskStatus(id, newStatus) {
+      vaultState.tasks = vaultState.tasks.map(t => t.id === id ? { ...t, status: newStatus } : t);
+      syncSaveAllData();
+      renderTasksList();
     }
 
-    async function deleteTask(id) {
-      vaultData.tasks = vaultData.tasks.filter(t => t.id !== id);
-      renderTasks();
-      await syncCloudVault();
+    function deleteTaskItem(id) {
+      vaultState.tasks = vaultState.tasks.filter(t => t.id !== id);
+      syncSaveAllData();
+      renderTasksList();
     }
 
-    // --- 4. Pomodoro Logic ---
-    let pomodoroInterval = null;
+    // --- 5. Pomodoro Functionality ---
+    let pomodoroTimer = null;
     let pomodoroSecs = 25 * 60;
     let isPomodoroRunning = false;
 
-    function updateTimerUI() {
+    function updatePomodoroUI() {
       const m = Math.floor(pomodoroSecs / 60).toString().padStart(2, '0');
       const s = (pomodoroSecs % 60).toString().padStart(2, '0');
       document.getElementById('pomodoro-timer').innerText = `${m}:${s}`;
@@ -780,21 +815,21 @@
     function togglePomodoro() {
       const btn = document.getElementById('pomodoro-toggle-btn');
       if (isPomodoroRunning) {
-        clearInterval(pomodoroInterval);
+        clearInterval(pomodoroTimer);
         isPomodoroRunning = false;
         btn.innerText = 'RESUME';
       } else {
         isPomodoroRunning = true;
         btn.innerText = 'PAUSE';
-        pomodoroInterval = setInterval(() => {
+        pomodoroTimer = setInterval(() => {
           if (pomodoroSecs > 0) {
             pomodoroSecs--;
-            updateTimerUI();
+            updatePomodoroUI();
           } else {
-            clearInterval(pomodoroInterval);
+            clearInterval(pomodoroTimer);
             isPomodoroRunning = false;
             alert('Focus Session Complete!');
-            logPomodoroStudy();
+            recordStudyTime();
             resetPomodoro();
           }
         }, 1000);
@@ -802,24 +837,24 @@
     }
 
     function resetPomodoro() {
-      clearInterval(pomodoroInterval);
+      clearInterval(pomodoroTimer);
       isPomodoroRunning = false;
       pomodoroSecs = 25 * 60;
-      updateTimerUI();
+      updatePomodoroUI();
       document.getElementById('pomodoro-toggle-btn').innerText = 'START';
     }
 
-    async function logPomodoroStudy() {
+    function recordStudyTime() {
       const tag = document.getElementById('pomodoro-tag').value.trim() || 'General Focus';
-      if (!vaultData.studyStats) vaultData.studyStats = {};
-      vaultData.studyStats[tag] = (vaultData.studyStats[tag] || 0) + 25;
+      if (!vaultState.studyStats) vaultState.studyStats = {};
+      vaultState.studyStats[tag] = (vaultState.studyStats[tag] || 0) + 25;
+      syncSaveAllData();
       renderPomodoroLogs();
-      await syncCloudVault();
     }
 
     function renderPomodoroLogs() {
       const container = document.getElementById('pomodoro-logs');
-      const keys = Object.keys(vaultData.studyStats || {});
+      const keys = Object.keys(vaultState.studyStats || {});
       if (keys.length === 0) {
         container.innerHTML = '<span class="text-zinc-600">ยังไม่มีบันทึกเวลา</span>';
         return;
@@ -827,16 +862,18 @@
       container.innerHTML = keys.map(k => `
         <div class="flex justify-between py-1 border-b border-zinc-800/40">
           <span>${k}</span>
-          <span class="text-rose-500">${vaultData.studyStats[k]} mins</span>
+          <span class="text-rose-500">${vaultState.studyStats[k]} mins</span>
         </div>
       `).join('');
     }
 
-    // --- 5. GPA Calculator Logic ---
-    function renderGpaCourses() {
+    // --- 6. GPA Simulator Functionality ---
+    function renderGpaView() {
       const tbody = document.getElementById('gpa-table-body');
       tbody.innerHTML = '';
-      (vaultData.gpaProfile.courses || []).forEach((c, idx) => {
+      
+      const courses = vaultState.gpa_profile.courses || [];
+      courses.forEach((c, idx) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="py-2"><input type="text" value="${c.name}" class="bg-transparent text-zinc-200 border-none outline-none w-full course-name" /></td>
@@ -852,23 +889,28 @@
         `;
         tbody.appendChild(tr);
       });
-      calculateTermGpa(false);
+
+      document.getElementById('sim-prev-gpax').value = vaultState.gpa_profile.currentGpax || '';
+      document.getElementById('sim-prev-credits').value = vaultState.gpa_profile.currentCredits || '';
+      document.getElementById('sim-goal-gpax').value = vaultState.gpa_profile.targetGpax || '';
+      document.getElementById('sim-term-credits').value = vaultState.gpa_profile.termCredits || '';
+      calculateTermGpa();
     }
 
-    async function addGpaCourseRow() {
-      if (!vaultData.gpaProfile.courses) vaultData.gpaProfile.courses = [];
-      vaultData.gpaProfile.courses.push({ name: 'New Course', credits: 3, grade: 'A' });
-      renderGpaCourses();
-      await syncCloudVault();
+    function addGpaCourseRow() {
+      if (!vaultState.gpa_profile.courses) vaultState.gpa_profile.courses = [];
+      vaultState.gpa_profile.courses.push({ name: 'New Course', credits: 3, grade: 'A' });
+      renderGpaView();
+      syncSaveAllData();
     }
 
-    async function removeGpaRow(index) {
-      vaultData.gpaProfile.courses.splice(index, 1);
-      renderGpaCourses();
-      await syncCloudVault();
+    function removeGpaRow(index) {
+      vaultState.gpa_profile.courses.splice(index, 1);
+      renderGpaView();
+      syncSaveAllData();
     }
 
-    async function calculateTermGpa(shouldSync = true) {
+    function calculateTermGpa() {
       const rows = document.querySelectorAll('#gpa-table-body tr');
       let totalPts = 0;
       let totalCredits = 0;
@@ -877,8 +919,8 @@
         const name = r.querySelector('.course-name').value;
         const cred = parseFloat(r.querySelector('.course-credits').value) || 0;
         const gr = r.querySelector('.course-grade').value;
-        if (vaultData.gpaProfile.courses[idx]) {
-          vaultData.gpaProfile.courses[idx] = { name, credits: cred, grade: gr };
+        if (vaultState.gpa_profile.courses[idx]) {
+          vaultState.gpa_profile.courses[idx] = { name, credits: cred, grade: gr };
         }
         totalCredits += cred;
         totalPts += cred * GRADE_POINTS[gr];
@@ -887,8 +929,7 @@
       const termGpa = totalCredits > 0 ? (totalPts / totalCredits).toFixed(2) : '0.00';
       document.getElementById('output-term-gpa').innerText = termGpa;
       document.getElementById('output-term-credits').innerText = `${totalCredits} หน่วยกิต`;
-      
-      if (shouldSync) await syncCloudVault();
+      syncSaveAllData();
     }
 
     function runGpaSimulation() {
@@ -903,6 +944,12 @@
         return;
       }
 
+      vaultState.gpa_profile.currentGpax = curGpax;
+      vaultState.gpa_profile.currentCredits = curCredits;
+      vaultState.gpa_profile.targetGpax = targetGpax;
+      vaultState.gpa_profile.termCredits = termCredits;
+      syncSaveAllData();
+
       const totalCredits = curCredits + termCredits;
       const neededPoints = (targetGpax * totalCredits) - (curGpax * curCredits);
       const neededGpa = (neededPoints / termCredits).toFixed(2);
@@ -912,26 +959,13 @@
       } else if (neededGpa <= 0) {
         out.innerHTML = `<span class="text-emerald-400 font-mono-code font-bold">เป้าหมายผ่านแล้ว:</span> เกรดเฉลี่ยเดิมสูงพออยู่แล้ว ประคองผลการเรียนได้ตามปกติ`;
       } else {
-        out.innerHTML = `คุณต้องทำเกรดในเทอมนี้ให้ได้อย่างน้อย <span class="text-rose-400 font-mono-code font-bold text-sm">${neededGpa}</span> เพื่อให้เกรดรวมถึง <b>${targetGpax}</b>`;
+        out.innerHTML = `ต้องทำเกรดเฉลี่ยเทอมนี้ให้ได้อย่างน้อย <span class="text-rose-400 font-mono-code font-bold text-sm">${neededGpa}</span> เพื่อให้ GPAX ถึงเป้าหมาย <b>${targetGpax}</b>`;
       }
     }
 
-    function renderAllViews() {
-      renderNotes();
-      renderSchedule();
-      renderTasks();
-      renderPomodoroLogs();
-      renderGpaCourses();
-      
-      if (vaultData.gpaProfile) {
-        document.getElementById('sim-prev-gpax').value = vaultData.gpaProfile.currentGpax || '';
-        document.getElementById('sim-prev-credits').value = vaultData.gpaProfile.currentCredits || '';
-        document.getElementById('sim-goal-gpax').value = vaultData.gpaProfile.targetGpax || '';
-        document.getElementById('sim-term-credits').value = vaultData.gpaProfile.termCredits || '';
-      }
-    }
-
+    // --- Init on Window Load ---
     window.onload = () => {
+      document.getElementById('auth-email-input').value = activeUserEmail;
       lucide.createIcons();
     };
   </script>
