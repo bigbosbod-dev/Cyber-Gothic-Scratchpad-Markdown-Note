@@ -145,10 +145,10 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <button onclick="lockVault()" title="Lock Screen" class="px-2.5 py-1.5 border border-zinc-800 hover:border-amber-500 text-zinc-500 hover:text-amber-400 text-xs font-mono uppercase flex items-center gap-1">
+          <button onclick="lockVault()" title="Lock Screen" class="px-2.5 py-1.5 border border-zinc-800 hover:border-amber-500 text-zinc-500 hover:text-amber-400 text-xs font-mono uppercase flex items-center gap-1 cursor-pointer">
             <i data-lucide="lock" class="w-3 h-3"></i> LOCK
           </button>
-          <button onclick="handleSignOut()" title="Sign Out" class="px-2.5 py-1.5 border border-zinc-800 hover:border-rose-500 text-zinc-500 hover:text-rose-400 text-xs font-mono uppercase flex items-center gap-1">
+          <button onclick="handleSignOut()" title="Sign Out" class="px-2.5 py-1.5 border border-zinc-800 hover:border-rose-500 text-zinc-500 hover:text-rose-400 text-xs font-mono uppercase flex items-center gap-1 cursor-pointer">
             <i data-lucide="log-out" class="w-3 h-3"></i> LOGOUT
           </button>
         </div>
@@ -437,15 +437,20 @@
     let isBreakMode = false;
 
     window.addEventListener('DOMContentLoaded', async () => {
-      lucide.createIcons();
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session && session.user) {
-        onUserAuthenticated(session.user);
+      if (window.lucide) lucide.createIcons();
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session && session.user) {
+          onUserAuthenticated(session.user);
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
       }
     });
 
     function showToast(message, type = 'success') {
       const container = document.getElementById("toast-container");
+      if (!container) return;
       const toast = document.createElement("div");
       let borderClass = 'border-emerald-500/50 text-emerald-300';
       let icon = '✦';
@@ -496,7 +501,9 @@
     }
 
     async function handleSignOut() {
-      await supabaseClient.auth.signOut();
+      try {
+        await supabaseClient.auth.signOut();
+      } catch(e) {}
       lockVault();
       currentUser = null;
       document.getElementById("lock-screen").classList.add("hidden");
@@ -551,25 +558,31 @@
 
       try {
         currentCryptoKey = await deriveKey(pass);
-        await syncLoadAllData();
+        
+        try {
+          await syncLoadAllData();
+        } catch (loadErr) {
+          console.error("Load warning:", loadErr);
+        }
 
         document.getElementById("lock-screen").classList.add("hidden");
         document.getElementById("main-workspace").classList.remove("hidden");
         document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-emerald-400 font-mono">${currentUser.email} (UNLOCKED)</span>`;
         resetInactivityTimer();
         
-        renderNotes();
-        renderTimetable();
-        renderKanban();
-        renderPomodoroStats();
-        renderGpaCourses();
-        calculateGpa();
-        checkUpcomingClass();
-        lucide.createIcons();
+        // รันเรนเดอร์โดยไม่ยอมให้ตัวใดตัวหนึ่งทำให้หน้าเว็บหยุดทำงาน
+        try { renderNotes(); } catch (e) { console.error("renderNotes error:", e); }
+        try { renderTimetable(); } catch (e) { console.error("renderTimetable error:", e); }
+        try { renderKanban(); } catch (e) { console.error("renderKanban error:", e); }
+        try { renderPomodoroStats(); } catch (e) { console.error("renderPomo error:", e); }
+        try { renderGpaCourses(); calculateGpa(); } catch (e) { console.error("renderGpa error:", e); }
+        try { checkUpcomingClass(); } catch (e) { console.error("classRadar error:", e); }
+
+        if (window.lucide) lucide.createIcons();
         showToast("ปลดล็อก STUDY VAULT สำเร็จ ✦");
       } catch (err) {
         console.error(err);
-        alert("รหัส Master Key ไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการโหลดข้อมูล");
+        alert("รหัส Master Key ไม่ถูกต้อง");
       }
     }
 
@@ -586,12 +599,8 @@
       }
     }
 
-    // ฟังก์ชันบันทึกข้อมูล พร้อมแสดงข้อผิดพลาดถ้ามี
     async function syncSaveCategory(category) {
-      if (!currentCryptoKey || !currentUser) {
-        console.error("Missing key or user session!");
-        return;
-      }
+      if (!currentCryptoKey || !currentUser) return;
       try {
         const dataToSave = appData[category];
         const encrypted = await encryptData(dataToSave);
@@ -608,16 +617,12 @@
         if (error) {
           console.error("Supabase Save Error:", error);
           alert("บันทึกลงฐานข้อมูลไม่สำเร็จ: " + error.message);
-        } else {
-          console.log("บันทึก Cloud สำเร็จ:", category);
         }
       } catch (err) {
-        console.error("Encryption/Save error:", err);
-        alert("เกิดข้อผิดพลาดในการเข้ารหัส: " + err.message);
+        console.error("Encryption error:", err);
       }
     }
 
-    // ฟังก์ชันโหลดข้อมูลกลับมาแสดงผล
     async function syncLoadAllData() {
       if (!currentUser) return;
       const { data, error } = await supabaseClient
@@ -625,18 +630,15 @@
         .select('category, payload')
         .eq('user_id', currentUser.id);
 
-      if (error) {
-        console.error("Load Error:", error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (data && data.length > 0) {
         for (const row of data) {
           try {
             const decrypted = await decryptData(row.payload);
-            if (row.category === 'keep_notes') appData.notes = decrypted || [];
-            if (row.category === 'timetable') appData.timetable = decrypted || [];
-            if (row.category === 'assignments') appData.assignments = decrypted || [];
+            if (row.category === 'keep_notes') appData.notes = Array.isArray(decrypted) ? decrypted : [];
+            if (row.category === 'timetable') appData.timetable = Array.isArray(decrypted) ? decrypted : [];
+            if (row.category === 'assignments') appData.assignments = Array.isArray(decrypted) ? decrypted : [];
             if (row.category === 'pomodoro_stats') appData.pomo_stats = decrypted || {};
             if (row.category === 'gpa_profile') appData.gpa = decrypted || { target: 3.5, accumCredits: 60, currentGpax: 3.2, courses: [] };
           } catch (e) {
@@ -650,9 +652,11 @@
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
 
-      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-      document.getElementById(`tab-btn-${tabId}`).classList.add('active');
-      lucide.createIcons();
+      const targetTab = document.getElementById(`tab-${tabId}`);
+      const targetBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (targetTab) targetTab.classList.remove('hidden');
+      if (targetBtn) targetBtn.classList.add('active');
+      if (window.lucide) lucide.createIcons();
     }
 
     // ================= 1. KEEP NOTES SYSTEM =================
@@ -697,11 +701,10 @@
         <input type="text" placeholder="สิ่งที่ต้องทำ..." class="todo-item-input w-full bg-transparent text-xs text-zinc-200 outline-none border-b border-zinc-800/80 py-1 font-mono">
       `;
       document.getElementById("todo-items-builder").appendChild(div);
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
       div.querySelector('input').focus();
     }
 
-    // แก้ไขจุดสำคัญ: ต้อง await บันทึกลง Cloud ให้สำเร็จแน่นอนก่อนสั่ง collapse
     async function createNote() {
       const title = document.getElementById("new-title").value.trim();
       const folder = document.getElementById("new-folder").value || 'GENERAL';
@@ -730,8 +733,6 @@
       };
 
       appData.notes.unshift(note);
-
-      // บันทึกขึ้น Cloud ทันที
       await syncSaveCategory('keep_notes');
 
       renderNotes();
@@ -763,22 +764,31 @@
       await syncSaveCategory('keep_notes');
     }
 
+    function setFilterFolder(f) {
+      activeFilterFolder = f;
+      renderNotes();
+    }
+
     function renderNotes() {
       const searchInput = document.getElementById("note-search");
       const query = (searchInput ? searchInput.value : "").toLowerCase().trim();
       
-      const existingFolders = (appData.notes || []).map(n => n.folder || 'GENERAL');
+      const allNotes = Array.isArray(appData.notes) ? appData.notes : [];
+      const existingFolders = allNotes.map(n => (n && n.folder) ? n.folder : 'GENERAL');
       const folders = Array.from(new Set(['GENERAL', ...existingFolders]));
       
+      // Render Folder Pills
       const pillsContainer = document.getElementById("folder-pills");
       if (pillsContainer) {
-        let pillsHtml = `<button onclick="setFilterFolder('ALL')" class="px-2.5 py-1 text-[11px] font-mono uppercase ${activeFilterFolder === 'ALL' ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400'}">#ALL</button>`;
+        let pillsHtml = `<button onclick="setFilterFolder('ALL')" class="px-2.5 py-1 text-[11px] font-mono uppercase cursor-pointer transition-all ${activeFilterFolder === 'ALL' ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400 hover:text-white'}">#ALL</button>`;
         folders.forEach(f => {
-          pillsHtml += `<button onclick="setFilterFolder('${f}')" class="px-2.5 py-1 text-[11px] font-mono uppercase ${activeFilterFolder === f ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400'}">#${f}</button>`;
+          const isCurrent = (activeFilterFolder === f);
+          pillsHtml += `<button onclick="setFilterFolder('${f}')" class="px-2.5 py-1 text-[11px] font-mono uppercase cursor-pointer transition-all ${isCurrent ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400 hover:text-white'}">#${f}</button>`;
         });
         pillsContainer.innerHTML = pillsHtml;
       }
 
+      // Update Select Dropdown
       const select = document.getElementById("new-folder");
       if (select) {
         const currentVal = select.value || 'GENERAL';
@@ -786,7 +796,7 @@
         if (folders.includes(currentVal)) select.value = currentVal;
       }
 
-      const allNotes = Array.isArray(appData.notes) ? appData.notes : [];
+      // Filter Notes
       const filtered = allNotes.filter(n => {
         if (!n) return false;
         const noteFolder = n.folder || 'GENERAL';
@@ -850,7 +860,7 @@
           <div>
             <div class="flex items-start justify-between gap-2">
               <h4 class="text-white font-bold text-sm break-words">${escapeHtml(n.title || 'UNTITLED')}</h4>
-              <button onclick="togglePinNote('${n.id}')" class="text-zinc-600 hover:text-amber-400">
+              <button onclick="togglePinNote('${n.id}')" class="text-zinc-600 hover:text-amber-400 cursor-pointer">
                 <i data-lucide="pin" class="w-3.5 h-3.5 ${n.is_pinned ? 'text-amber-400 fill-amber-400' : ''}"></i>
               </button>
             </div>
@@ -859,17 +869,12 @@
           </div>
           <div class="flex items-center justify-between pt-3 mt-3 border-t border-zinc-900 text-[10px] text-zinc-600">
             <span>${dateStr}</span>
-            <button onclick="deleteNote('${n.id}')" class="hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onclick="deleteNote('${n.id}')" class="hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             </button>
           </div>
         </div>
       `;
-    }
-
-    function setFilterFolder(f) {
-      activeFilterFolder = f;
-      renderNotes();
     }
 
     function handleFolderSelectChange(sel) {
@@ -927,6 +932,7 @@
       ];
 
       const container = document.getElementById("timetable-matrix");
+      if (!container) return;
       container.innerHTML = days.map(d => {
         const classes = appData.timetable.filter(c => c.day === d.key).sort((a,b) => a.start.localeCompare(b.start));
         return `
@@ -942,7 +948,7 @@
                     <span>${escapeHtml(c.room || 'ONLINE')}</span>
                     <span class="text-zinc-500">${escapeHtml(c.code || '')}</span>
                   </div>
-                  <button onclick="deleteClass('${c.id}')" class="absolute top-2 right-2 text-zinc-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onclick="deleteClass('${c.id}')" class="absolute top-2 right-2 text-zinc-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                     <i data-lucide="x" class="w-3 h-3"></i>
                   </button>
                 </div>
@@ -951,7 +957,7 @@
           </div>
         `;
       }).join("");
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
     }
 
     function checkUpcomingClass() {
@@ -967,6 +973,8 @@
       const titleEl = document.getElementById("next-class-title");
       const detailEl = document.getElementById("next-class-detail");
       const badgeEl = document.getElementById("next-class-badge");
+
+      if (!titleEl || !detailEl || !badgeEl) return;
 
       if (current) {
         titleEl.innerText = `กำลังเรียน: ${current.name} (${current.code || ''})`;
@@ -1030,40 +1038,44 @@
       const statuses = ['todo', 'doing', 'review', 'done'];
       statuses.forEach(s => {
         const tasks = appData.assignments.filter(t => t.status === s);
-        document.getElementById(`count-${s}`).innerText = tasks.length;
-        const col = document.getElementById(`col-${s}`);
-        col.innerHTML = tasks.map(t => {
-          let nextBtn = '';
-          if (s === 'todo') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'doing')" class="text-[10px] text-amber-400 hover:underline font-mono">DOING ➔</button>`;
-          if (s === 'doing') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'review')" class="text-[10px] text-violet-400 hover:underline font-mono">REVIEW ➔</button>`;
-          if (s === 'review') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'done')" class="text-[10px] text-emerald-400 hover:underline font-mono">DONE ➔</button>`;
-          if (s === 'done') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'todo')" class="text-[10px] text-zinc-500 hover:underline font-mono">↺ REOPEN</button>`;
+        const countEl = document.getElementById(`count-${s}`);
+        const colEl = document.getElementById(`col-${s}`);
+        if (countEl) countEl.innerText = tasks.length;
+        if (colEl) {
+          colEl.innerHTML = tasks.map(t => {
+            let nextBtn = '';
+            if (s === 'todo') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'doing')" class="text-[10px] text-amber-400 hover:underline font-mono cursor-pointer">DOING ➔</button>`;
+            if (s === 'doing') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'review')" class="text-[10px] text-violet-400 hover:underline font-mono cursor-pointer">REVIEW ➔</button>`;
+            if (s === 'review') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'done')" class="text-[10px] text-emerald-400 hover:underline font-mono cursor-pointer">DONE ➔</button>`;
+            if (s === 'done') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'todo')" class="text-[10px] text-zinc-500 hover:underline font-mono cursor-pointer">↺ REOPEN</button>`;
 
-          return `
-            <div class="sigil-card color-default p-3 space-y-2 group">
-              <div class="flex items-start justify-between gap-1">
-                <span class="text-[9px] px-1.5 py-0.5 border border-zinc-800 text-zinc-400 font-mono uppercase">${escapeHtml(t.subject)}</span>
-                <button onclick="deleteKanbanTask('${t.id}')" class="text-zinc-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <i data-lucide="trash-2" class="w-3 h-3"></i>
-                </button>
+            return `
+              <div class="sigil-card color-default p-3 space-y-2 group">
+                <div class="flex items-start justify-between gap-1">
+                  <span class="text-[9px] px-1.5 py-0.5 border border-zinc-800 text-zinc-400 font-mono uppercase">${escapeHtml(t.subject)}</span>
+                  <button onclick="deleteKanbanTask('${t.id}')" class="text-zinc-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    <i data-lucide="trash-2" class="w-3 h-3"></i>
+                  </button>
+                </div>
+                <h5 class="text-xs font-bold text-white leading-snug">${escapeHtml(t.title)}</h5>
+                <div class="flex items-center justify-between pt-2 border-t border-zinc-900 text-[10px] font-mono">
+                  <span class="${t.deadline ? 'text-zinc-500' : 'text-zinc-600'}">📅 ${t.deadline || 'NO DATE'}</span>
+                  ${nextBtn}
+                </div>
               </div>
-              <h5 class="text-xs font-bold text-white leading-snug">${escapeHtml(t.title)}</h5>
-              <div class="flex items-center justify-between pt-2 border-t border-zinc-900 text-[10px] font-mono">
-                <span class="${t.deadline ? 'text-zinc-500' : 'text-zinc-600'}">📅 ${t.deadline || 'NO DATE'}</span>
-                ${nextBtn}
-              </div>
-            </div>
-          `;
-        }).join("");
+            `;
+          }).join("");
+        }
       });
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
     }
 
     // ================= 4. POMODORO TIMER & STATS =================
     function updatePomoTimerDisplay() {
       const m = String(pomoMinutes).padStart(2, '0');
       const s = String(pomoSeconds).padStart(2, '0');
-      document.getElementById("pomo-timer").innerText = `${m}:${s}`;
+      const timerEl = document.getElementById("pomo-timer");
+      if (timerEl) timerEl.innerText = `${m}:${s}`;
     }
 
     function togglePomodoro() {
@@ -1071,16 +1083,16 @@
       if (isPomoRunning) {
         clearInterval(pomoInterval);
         isPomoRunning = false;
-        btn.innerText = "START";
+        if (btn) btn.innerText = "START";
       } else {
         isPomoRunning = true;
-        btn.innerText = "PAUSE";
+        if (btn) btn.innerText = "PAUSE";
         pomoInterval = setInterval(async () => {
           if (pomoSeconds === 0) {
             if (pomoMinutes === 0) {
               clearInterval(pomoInterval);
               isPomoRunning = false;
-              btn.innerText = "START";
+              if (btn) btn.innerText = "START";
               handlePomoComplete();
               return;
             }
@@ -1097,7 +1109,8 @@
     function resetPomodoro() {
       clearInterval(pomoInterval);
       isPomoRunning = false;
-      document.getElementById("pomo-start-btn").innerText = "START";
+      const btn = document.getElementById("pomo-start-btn");
+      if (btn) btn.innerText = "START";
       pomoMinutes = isBreakMode ? 5 : 25;
       pomoSeconds = 0;
       updatePomoTimerDisplay();
@@ -1117,18 +1130,22 @@
       const modeBtn = document.getElementById("pomo-mode-btn");
 
       if (isBreakMode) {
-        badge.innerText = "SHORT BREAK";
-        badge.className = "text-[11px] px-3 py-1 bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 font-mono uppercase tracking-widest mb-4";
+        if (badge) {
+          badge.innerText = "SHORT BREAK";
+          badge.className = "text-[11px] px-3 py-1 bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 font-mono uppercase tracking-widest mb-4";
+        }
         if (modeBtn) {
           modeBtn.innerText = "FOCUS (25M)";
-          modeBtn.className = "px-3 py-2.5 border border-zinc-800 hover:border-rose-600 text-rose-400 text-xs font-mono";
+          modeBtn.className = "px-3 py-2.5 border border-zinc-800 hover:border-rose-600 text-rose-400 text-xs font-mono cursor-pointer";
         }
       } else {
-        badge.innerText = "FOCUS SESSION";
-        badge.className = "text-[11px] px-3 py-1 bg-rose-950/60 border border-rose-500/50 text-rose-300 font-mono uppercase tracking-widest mb-4";
+        if (badge) {
+          badge.innerText = "FOCUS SESSION";
+          badge.className = "text-[11px] px-3 py-1 bg-rose-950/60 border border-rose-500/50 text-rose-300 font-mono uppercase tracking-widest mb-4";
+        }
         if (modeBtn) {
           modeBtn.innerText = "SHORT BREAK (5M)";
-          modeBtn.className = "px-3 py-2.5 border border-zinc-800 hover:border-emerald-600 text-emerald-400 text-xs font-mono";
+          modeBtn.className = "px-3 py-2.5 border border-zinc-800 hover:border-emerald-600 text-emerald-400 text-xs font-mono cursor-pointer";
         }
       }
       resetPomodoro();
@@ -1151,6 +1168,7 @@
     function renderPomodoroStats() {
       const statsList = document.getElementById("pomo-stats-list");
       const totalEl = document.getElementById("total-focus-minutes");
+      if (!statsList || !totalEl) return;
       const entries = Object.entries(appData.pomo_stats);
 
       let total = 0;
@@ -1193,6 +1211,7 @@
 
     function renderGpaCourses() {
       const container = document.getElementById("gpa-courses-table");
+      if (!container) return;
       if (!appData.gpa.courses || appData.gpa.courses.length === 0) {
         container.innerHTML = `<div class="text-xs text-zinc-600 font-mono text-center py-4">ยังไม่ได้เพิ่มรายวิชาในเทอมนี้</div>`;
         return;
@@ -1205,12 +1224,12 @@
           <select onchange="updateCourseField('${c.id}', 'targetGrade', this.value)" class="col-span-3 bg-zinc-950 border border-zinc-800 text-amber-400 py-1 px-1 outline-none text-center">
             ${Object.keys(GRADE_POINTS).map(g => `<option value="${g}" ${c.targetGrade === g ? 'selected' : ''}>${g} (${GRADE_POINTS[g]})</option>`).join("")}
           </select>
-          <button onclick="removeGpaCourse('${c.id}')" class="col-span-1 text-zinc-600 hover:text-rose-400 flex justify-center">
+          <button onclick="removeGpaCourse('${c.id}')" class="col-span-1 text-zinc-600 hover:text-rose-400 flex justify-center cursor-pointer">
             <i data-lucide="x" class="w-3.5 h-3.5"></i>
           </button>
         </div>
       `).join("");
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
     }
 
     function updateCourseField(id, field, val) {
@@ -1222,9 +1241,9 @@
     }
 
     async function calculateGpa() {
-      const targetGpax = parseFloat(document.getElementById("target-gpax").value) || 3.50;
-      const accumCredits = parseFloat(document.getElementById("accum-credits").value) || 0;
-      const currentGpax = parseFloat(document.getElementById("current-gpax").value) || 0;
+      const targetGpax = parseFloat(document.getElementById("target-gpax")?.value) || 3.50;
+      const accumCredits = parseFloat(document.getElementById("accum-credits")?.value) || 0;
+      const currentGpax = parseFloat(document.getElementById("current-gpax")?.value) || 0;
 
       let termCredits = 0;
       let termQualityPoints = 0;
@@ -1252,6 +1271,7 @@
       await syncSaveCategory('gpa_profile');
 
       const resultBox = document.getElementById("gpa-simulator-result");
+      if (!resultBox) return;
       const isReachable = requiredTermGpa <= 4.0;
 
       resultBox.innerHTML = `
