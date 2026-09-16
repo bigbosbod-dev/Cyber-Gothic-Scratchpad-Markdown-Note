@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>† GOTHIC KEEP // CLOUD VAULT †</title>
+  <title>† GOTHIC KEEP // ADVANCED VAULT †</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,6 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Space+Mono:wght@400;700&family=Prompt:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Markdown Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
     body {
@@ -20,27 +22,44 @@
     }
     .gothic-title { font-family: 'Cinzel', serif; letter-spacing: 0.15em; }
     .sigil-card {
-      background: rgba(12, 12, 16, 0.92);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+      background: rgba(12, 12, 16, 0.95);
+      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.8);
       transition: all 0.2s ease;
     }
-    .sigil-card:hover {
-      border-color: rgba(255, 255, 255, 0.25);
+    .color-default { border: 1px solid rgba(255, 255, 255, 0.12); }
+    .color-crimson { border: 1px solid rgba(244, 63, 94, 0.45); box-shadow: 0 0 15px rgba(244, 63, 94, 0.15); }
+    .color-emerald { border: 1px solid rgba(16, 185, 129, 0.45); box-shadow: 0 0 15px rgba(16, 185, 129, 0.15); }
+    .color-amber   { border: 1px solid rgba(245, 158, 11, 0.45); box-shadow: 0 0 15px rgba(245, 158, 11, 0.15); }
+    .color-violet  { border: 1px solid rgba(139, 92, 246, 0.45); box-shadow: 0 0 15px rgba(139, 92, 246, 0.15); }
+
+    .pinned-badge {
+      box-shadow: inset 0 0 10px rgba(251, 191, 36, 0.2);
     }
-    .pinned-border {
-      border-color: rgba(251, 191, 36, 0.4) !important;
+    .md-content p { margin-bottom: 0.5rem; }
+    .md-content pre {
+      background: #020204;
+      padding: 0.5rem;
+      border: 1px solid #27272a;
+      overflow-x: auto;
+      margin: 0.5rem 0;
+      font-size: 11px;
+    }
+    .md-content code {
+      background: #18181b;
+      padding: 2px 4px;
+      font-size: 11px;
+      color: #a1a1aa;
     }
   </style>
 </head>
-<body class="text-zinc-300 min-h-screen py-8 px-4 md:px-8 flex flex-col justify-between">
+<body class="text-zinc-300 min-h-screen py-6 px-4 md:px-8 flex flex-col justify-between" onmousemove="resetInactivityTimer()" onkeydown="resetInactivityTimer()">
 
   <div class="max-w-5xl mx-auto w-full">
     
     <!-- Top Header -->
-    <header class="flex items-center justify-between mb-8 pb-4 border-b border-zinc-800/80">
+    <header class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
       <div>
-        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ AES-256 VAULT PROTOCOL ✦</span>
+        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ ADVANCED CYPHER PROTOCOL ✦</span>
         <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase mt-0.5">
           GOTHIC // KEEP
         </h1>
@@ -51,7 +70,7 @@
     </header>
 
     <!-- Master Key Lock Screen -->
-    <div id="lock-screen" class="sigil-card max-w-md mx-auto p-8 text-center my-12">
+    <div id="lock-screen" class="sigil-card color-default max-w-md mx-auto p-8 text-center my-12">
       <div class="text-3xl mb-3">🔒</div>
       <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2">ENTER MASTER KEY</h2>
       <p class="text-xs text-zinc-500 mb-6">กรอกรหัสผ่านเพื่อถอดรหัสกระดานโน้ตของคุณ (ใช้รหัสเดียวกันทุกอุปกรณ์)</p>
@@ -65,51 +84,85 @@
       >
       <button 
         onclick="unlockVault()" 
-        class="w-full py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95"
+        class="w-full py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg"
       >
         ✦ UNLOCK KEEP ✦
       </button>
     </div>
 
     <!-- Keep Workspace (Unlocked) -->
-    <div id="keep-screen" class="hidden space-y-8">
+    <div id="keep-screen" class="hidden space-y-6">
       
-      <!-- Top Actions Bar: Search + Filter -->
-      <div class="flex items-center justify-between gap-4">
+      <!-- Top Actions Bar -->
+      <div class="flex items-center justify-between gap-3">
         <div class="relative flex-1 max-w-md">
           <i data-lucide="search" class="w-4 h-4 text-zinc-500 absolute left-3 top-2.5"></i>
           <input 
             type="text" 
             id="search-input" 
-            placeholder="ค้นหาบันทึก..." 
+            placeholder="ค้นหาบันทึกหรือรายการ..." 
             oninput="renderNotes()"
             class="w-full bg-zinc-900/80 border border-zinc-800 pl-9 pr-4 py-2 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-zinc-500 font-mono"
           >
         </div>
-        <button onclick="lockVault()" class="px-3 py-2 border border-zinc-800 hover:border-red-500 text-zinc-500 hover:text-red-400 text-xs uppercase tracking-wider transition-all">
-          LOCK
-        </button>
+        <div class="flex items-center gap-3">
+          <span id="timer-display" class="text-[10px] text-zinc-600 font-mono hidden md:inline">AUTO-LOCK IN 5M</span>
+          <button onclick="lockVault()" class="px-3 py-1.5 border border-zinc-800 hover:border-red-500 text-zinc-500 hover:text-red-400 text-xs uppercase tracking-wider transition-all">
+            LOCK
+          </button>
+        </div>
       </div>
 
-      <!-- Keep Create Box (Take a note...) -->
-      <div class="sigil-card max-w-xl mx-auto p-4 relative" id="create-box">
+      <!-- Create Box (Support Note & Checklist) -->
+      <div class="sigil-card color-default max-w-xl mx-auto p-4 relative" id="create-box">
         <input 
           type="text" 
           id="new-title" 
           placeholder="หัวข้อบันทึก..." 
           class="w-full bg-transparent text-white font-bold text-sm pb-2 mb-2 border-b border-zinc-800 outline-none placeholder:text-zinc-600 font-mono hidden"
         >
-        <textarea 
-          id="new-body" 
-          rows="1" 
-          placeholder="จดบันทึกข้อความ..." 
-          onfocus="expandCreateBox()"
-          class="w-full bg-transparent text-zinc-200 text-xs leading-relaxed placeholder:text-zinc-500 outline-none resize-none font-mono"
-        ></textarea>
-        <div id="create-actions" class="hidden flex items-center justify-between pt-3 mt-2 border-t border-zinc-800/60">
-          <label class="flex items-center gap-1.5 text-[11px] text-zinc-500 cursor-pointer">
-            <input type="checkbox" id="new-pin" class="accent-amber-400"> ปักหมุดไว้บนสุด
-          </label>
+
+        <!-- Plain Note Area -->
+        <div id="note-input-container">
+          <textarea 
+            id="new-body" 
+            rows="1" 
+            placeholder="จดบันทึก หรือสร้าง To-Do List... (รองรับ Markdown)" 
+            onfocus="expandCreateBox()"
+            class="w-full bg-transparent text-zinc-200 text-xs leading-relaxed placeholder:text-zinc-500 outline-none resize-none font-mono"
+          ></textarea>
+        </div>
+
+        <!-- Checklist Input Area -->
+        <div id="checklist-input-container" class="hidden space-y-2 mb-3">
+          <div id="todo-items-builder" class="space-y-1.5"></div>
+          <button onclick="addChecklistRow()" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 mt-2">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มรายการ
+          </button>
+        </div>
+
+        <!-- Action Tools -->
+        <div id="create-actions" class="hidden flex flex-wrap items-center justify-between gap-3 pt-3 mt-2 border-t border-zinc-800/60">
+          <div class="flex items-center gap-3">
+            <!-- Mode Switcher -->
+            <button onclick="toggleNoteType()" id="type-toggle-btn" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1 border border-zinc-800 px-2 py-1">
+              <i data-lucide="check-square" class="w-3.5 h-3.5"></i> <span id="toggle-label">TO-DO</span>
+            </button>
+            
+            <!-- Color Selector -->
+            <div class="flex items-center gap-1.5">
+              <button onclick="selectColor('default')" class="w-3.5 h-3.5 rounded-full bg-zinc-700 hover:scale-110 transition-transform"></button>
+              <button onclick="selectColor('crimson')" class="w-3.5 h-3.5 rounded-full bg-rose-500 hover:scale-110 transition-transform"></button>
+              <button onclick="selectColor('emerald')" class="w-3.5 h-3.5 rounded-full bg-emerald-500 hover:scale-110 transition-transform"></button>
+              <button onclick="selectColor('amber')" class="w-3.5 h-3.5 rounded-full bg-amber-500 hover:scale-110 transition-transform"></button>
+              <button onclick="selectColor('violet')" class="w-3.5 h-3.5 rounded-full bg-violet-500 hover:scale-110 transition-transform"></button>
+            </div>
+
+            <label class="flex items-center gap-1 text-[11px] text-zinc-500 cursor-pointer">
+              <input type="checkbox" id="new-pin" class="accent-amber-400"> ปักหมุด
+            </label>
+          </div>
+
           <div class="flex gap-2">
             <button onclick="collapseCreateBox()" class="text-[11px] text-zinc-500 hover:text-white px-2 py-1 uppercase">ยกเลิก</button>
             <button onclick="createNote()" class="text-[11px] bg-white text-black font-bold px-4 py-1 uppercase hover:bg-zinc-200 transition-all">บันทึก</button>
@@ -144,6 +197,19 @@
 
     let currentCryptoKey = null;
     let localNotes = [];
+    let isChecklistMode = false;
+    let activeColor = 'default';
+    let inactivityTimer = null;
+
+    // Reset inactivity timer (5 minutes auto-lock)
+    function resetInactivityTimer() {
+      if (!currentCryptoKey) return;
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        lockVault();
+        alert("หน้าจอถูกล็อกอัตโนมัติเนื่องจากไม่มีการใช้งานเกิน 5 นาที");
+      }, 5 * 60 * 1000);
+    }
 
     async function deriveKey(passphrase) {
       const enc = new TextEncoder();
@@ -188,7 +254,8 @@
 
         document.getElementById("lock-screen").classList.add("hidden");
         document.getElementById("keep-screen").classList.remove("hidden");
-        document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-emerald-400 font-mono">● KEEP SYNCED</span>`;
+        document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-emerald-400 font-mono">● VAULT ACTIVE</span>`;
+        resetInactivityTimer();
         lucide.createIcons();
       } catch (err) {
         alert("รหัสผ่านไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการโหลดข้อมูล");
@@ -205,10 +272,16 @@
           const content = await decryptData(row.payload);
           localNotes.push({ id: row.id, is_pinned: row.is_pinned, updated_at: row.updated_at, ...content });
         } catch (e) {
-          console.warn("Skip note that failed decrypt", row.id);
+          console.warn("Skip invalid note", row.id);
         }
       }
       renderNotes();
+    }
+
+    function selectColor(color) {
+      activeColor = color;
+      const box = document.getElementById("create-box");
+      box.className = `sigil-card color-${color} max-w-xl mx-auto p-4 relative`;
     }
 
     function expandCreateBox() {
@@ -224,31 +297,75 @@
       document.getElementById("new-title").value = "";
       document.getElementById("new-body").value = "";
       document.getElementById("new-pin").checked = false;
+      document.getElementById("todo-items-builder").innerHTML = "";
+      selectColor('default');
+      if (isChecklistMode) toggleNoteType();
+    }
+
+    function toggleNoteType() {
+      isChecklistMode = !isChecklistMode;
+      document.getElementById("note-input-container").classList.toggle("hidden", isChecklistMode);
+      document.getElementById("checklist-input-container").classList.toggle("hidden", !isChecklistMode);
+      document.getElementById("toggle-label").innerText = isChecklistMode ? "NOTE" : "TO-DO";
+      if (isChecklistMode && document.getElementById("todo-items-builder").children.length === 0) {
+        addChecklistRow();
+      }
+    }
+
+    function addChecklistRow() {
+      const div = document.createElement("div");
+      div.className = "flex items-center gap-2";
+      div.innerHTML = `
+        <i data-lucide="square" class="w-3.5 h-3.5 text-zinc-600"></i>
+        <input type="text" placeholder="รายการสิ่งที่ต้องทำ..." class="todo-item-input w-full bg-transparent text-xs text-zinc-200 outline-none border-b border-zinc-800/80 py-1 font-mono">
+      `;
+      document.getElementById("todo-items-builder").appendChild(div);
+      lucide.createIcons();
+      div.querySelector('input').focus();
     }
 
     async function createNote() {
       const title = document.getElementById("new-title").value.trim();
-      const body = document.getElementById("new-body").value.trim();
       const isPinned = document.getElementById("new-pin").checked;
+      let bodyData = null;
 
-      if (!title && !body) return collapseCreateBox();
+      if (isChecklistMode) {
+        const inputs = Array.from(document.querySelectorAll(".todo-item-input"));
+        const items = inputs.map(i => ({ text: i.value.trim(), done: false })).filter(i => i.text);
+        if (!title && items.length === 0) return collapseCreateBox();
+        bodyData = { type: 'checklist', items: items };
+      } else {
+        const body = document.getElementById("new-body").value.trim();
+        if (!title && !body) return collapseCreateBox();
+        bodyData = { type: 'note', text: body };
+      }
 
-      const payload = await encryptData({ title, body });
+      const payload = await encryptData({ title, content: bodyData, color: activeColor });
       const { data, error } = await supabaseClient.from('notes').insert([{ payload, is_pinned: isPinned }]).select().single();
 
       if (error) return alert("บันทึกไม่สำเร็จ: " + error.message);
 
-      localNotes.unshift({ id: data.id, title, body, is_pinned: isPinned, updated_at: data.updated_at });
+      localNotes.unshift({ id: data.id, title, content: bodyData, color: activeColor, is_pinned: isPinned, updated_at: data.updated_at });
       collapseCreateBox();
       renderNotes();
+    }
+
+    async function toggleCheckItem(noteId, itemIdx) {
+      const note = localNotes.find(n => n.id === noteId);
+      if (!note || note.content.type !== 'checklist') return;
+
+      note.content.items[itemIdx].done = !note.content.items[itemIdx].done;
+      renderNotes();
+
+      const payload = await encryptData({ title: note.title, content: note.content, color: note.color });
+      await supabaseClient.from('notes').update({ payload, updated_at: new Date().toISOString() }).eq('id', noteId);
     }
 
     async function togglePin(id) {
       const note = localNotes.find(n => n.id === id);
       if (!note) return;
-      const nextPin = !note.is_pinned;
-      note.is_pinned = nextPin;
-      await supabaseClient.from('notes').update({ is_pinned: nextPin }).eq('id', id);
+      note.is_pinned = !note.is_pinned;
+      await supabaseClient.from('notes').update({ is_pinned: note.is_pinned }).eq('id', id);
       renderNotes();
     }
 
@@ -259,9 +376,23 @@
       renderNotes();
     }
 
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text);
+      alert("คัดลอกข้อความลงคลิปบอร์ดแล้ว!");
+    }
+
     function renderNotes() {
       const query = (document.getElementById("search-input")?.value || "").toLowerCase();
-      const filtered = localNotes.filter(n => (n.title || "").toLowerCase().includes(query) || (n.body || "").toLowerCase().includes(query));
+      const filtered = localNotes.filter(n => {
+        const titleMatch = (n.title || "").toLowerCase().includes(query);
+        let contentMatch = false;
+        if (n.content?.type === 'checklist') {
+          contentMatch = n.content.items.some(i => i.text.toLowerCase().includes(query));
+        } else {
+          contentMatch = (n.content?.text || "").toLowerCase().includes(query);
+        }
+        return titleMatch || contentMatch;
+      });
 
       const pinned = filtered.filter(n => n.is_pinned);
       const others = filtered.filter(n => !n.is_pinned);
@@ -271,8 +402,8 @@
       const pinnedSection = document.getElementById("pinned-section");
       const othersLabel = document.getElementById("others-label");
 
-      pinnedGrid.innerHTML = pinned.map(buildNoteCard).join("");
-      notesGrid.innerHTML = others.map(buildNoteCard).join("");
+      pinnedGrid.innerHTML = pinned.map(buildCardHtml).join("");
+      notesGrid.innerHTML = others.map(buildCardHtml).join("");
 
       pinnedSection.classList.toggle("hidden", pinned.length === 0);
       othersLabel.classList.toggle("hidden", pinned.length === 0);
@@ -280,23 +411,48 @@
       lucide.createIcons();
     }
 
-    function buildNoteCard(n) {
+    function buildCardHtml(n) {
+      const colorClass = `color-${n.color || 'default'}`;
+      let bodyHtml = '';
+      let rawTextForCopy = n.title ? `${n.title}\n\n` : '';
+
+      if (n.content?.type === 'checklist') {
+        bodyHtml = `<div class="space-y-1 mt-2">` + n.content.items.map((it, idx) => {
+          rawTextForCopy += `[${it.done ? 'x' : ' '}] ${it.text}\n`;
+          return `
+            <div onclick="toggleCheckItem('${n.id}',${idx})" class="flex items-center gap-2 cursor-pointer group/item py-0.5">
+              <i data-lucide="${it.done ? 'check-square' : 'square'}" class="w-3.5 h-3.5 ${it.done ? 'text-emerald-400' : 'text-zinc-600 group-hover/item:text-zinc-400'}"></i>
+              <span class="text-xs ${it.done ? 'line-through text-zinc-600' : 'text-zinc-300'}">${escapeHtml(it.text)}</span>
+            </div>
+          `;
+        }).join("") + `</div>`;
+      } else {
+        const plainText = n.content?.text || '';
+        rawTextForCopy += plainText;
+        bodyHtml = `<div class="md-content text-xs text-zinc-400 mt-2 break-words leading-relaxed">${marked.parse(plainText)}</div>`;
+      }
+
       return `
-        <div class="sigil-card ${n.is_pinned ? 'pinned-border' : ''} p-4 flex flex-col justify-between group">
+        <div class="sigil-card ${colorClass}${n.is_pinned ? 'pinned-badge' : ''} p-4 flex flex-col justify-between group">
           <div>
-            <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex items-start justify-between gap-2">
               <h4 class="text-white font-bold text-sm tracking-wide break-words">${escapeHtml(n.title || 'UNTITLED')}</h4>
               <button onclick="togglePin('${n.id}')" class="text-zinc-600 hover:text-amber-400 transition-colors p-1">
                 <i data-lucide="pin" class="w-3.5 h-3.5 ${n.is_pinned ? 'text-amber-400 fill-amber-400' : ''}"></i>
               </button>
             </div>
-            <p class="text-zinc-400 text-xs leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(n.body || '')}</p>
+            ${bodyHtml}
           </div>
-          <div class="flex items-center justify-between pt-4 mt-3 border-t border-zinc-900 text-[10px] text-zinc-600">
+          <div class="flex items-center justify-between pt-4 mt-3 border-t border-zinc-900/80 text-[10px] text-zinc-600">
             <span>${new Date(n.updated_at).toLocaleDateString('th-TH')}</span>
-            <button onclick="deleteNote('${n.id}')" class="hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-            </button>
+            <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onclick="copyToClipboard(\`${escapeAttr(rawTextForCopy.trim())}\`)" title="Copy" class="hover:text-zinc-200">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="deleteNote('${n.id}')" title="Delete" class="hover:text-red-400">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
           </div>
         </div>
       `;
@@ -306,9 +462,14 @@
       return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
     }
 
+    function escapeAttr(str) {
+      return str.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+    }
+
     function lockVault() {
       currentCryptoKey = null;
       localNotes = [];
+      clearTimeout(inactivityTimer);
       document.getElementById("master-pass").value = "";
       document.getElementById("keep-screen").classList.add("hidden");
       document.getElementById("lock-screen").classList.remove("hidden");
