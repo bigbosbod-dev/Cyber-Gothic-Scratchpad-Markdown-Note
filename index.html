@@ -586,7 +586,6 @@
       }
     }
 
-    // ฟังก์ชันบันทึกข้อมูลแบบตรวจจับและแจ้งเตือนชัดเจน
     async function syncSaveCategory(category) {
       if (!currentCryptoKey || !currentUser) {
         console.error("No key or user found!");
@@ -616,7 +615,6 @@
       }
     }
 
-    // ฟังก์ชันโหลดข้อมูลกลับมาแสดงผล
     async function syncLoadAllData() {
       if (!currentUser) return;
       const { data, error } = await supabaseClient
@@ -752,55 +750,93 @@
 
     async function toggleNoteCheckItem(noteId, idx) {
       const note = appData.notes.find(n => n.id === noteId);
-      if (!note || note.content.type !== 'checklist') return;
+      if (!note || note.content?.type !== 'checklist') return;
       note.content.items[idx].done = !note.content.items[idx].done;
       renderNotes();
       await syncSaveCategory('keep_notes');
     }
 
     function renderNotes() {
-      const query = (document.getElementById("note-search")?.value || "").toLowerCase();
-      const folders = Array.from(new Set(['GENERAL', ...appData.notes.map(n => n.folder || 'GENERAL')]));
+      const searchInput = document.getElementById("note-search");
+      const query = (searchInput ? searchInput.value : "").toLowerCase().trim();
       
-      let pillsHtml = `<button onclick="setFilterFolder('ALL')" class="px-2.5 py-1 text-[11px] font-mono uppercase ${activeFilterFolder === 'ALL' ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400'}">#ALL</button>`;
-      folders.forEach(f => {
-        pillsHtml += `<button onclick="setFilterFolder('${f}')" class="px-2.5 py-1 text-[11px] font-mono uppercase ${activeFilterFolder === f ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400'}">#${f}</button>`;
-      });
-      document.getElementById("folder-pills").innerHTML = pillsHtml;
+      const existingFolders = (appData.notes || []).map(n => n.folder || 'GENERAL');
+      const folders = Array.from(new Set(['GENERAL', ...existingFolders]));
+      
+      const pillsContainer = document.getElementById("folder-pills");
+      if (pillsContainer) {
+        let pillsHtml = `<button onclick="setFilterFolder('ALL')" class="px-2.5 py-1 text-[11px] font-mono uppercase ${activeFilterFolder === 'ALL' ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400'}">#ALL</button>`;
+        folders.forEach(f => {
+          pillsHtml += `<button onclick="setFilterFolder('${f}')" class="px-2.5 py-1 text-[11px] font-mono uppercase ${activeFilterFolder === f ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400'}">#${f}</button>`;
+        });
+        pillsContainer.innerHTML = pillsHtml;
+      }
 
       const select = document.getElementById("new-folder");
-      select.innerHTML = folders.map(f => `<option value="${f}">${f}</option>`).join("") + `<option value="__NEW__">+ สร้างโฟลเดอร์ใหม่...</option>`;
+      if (select) {
+        const currentVal = select.value || 'GENERAL';
+        select.innerHTML = folders.map(f => `<option value="${f}">${f}</option>`).join("") + `<option value="__NEW__">+ สร้างโฟลเดอร์ใหม่...</option>`;
+        if (folders.includes(currentVal)) select.value = currentVal;
+      }
 
-      const filtered = appData.notes.filter(n => {
-        if (activeFilterFolder !== 'ALL' && n.folder !== activeFilterFolder) return false;
+      const allNotes = Array.isArray(appData.notes) ? appData.notes : [];
+      const filtered = allNotes.filter(n => {
+        if (!n) return false;
+        const noteFolder = n.folder || 'GENERAL';
+        if (activeFilterFolder !== 'ALL' && noteFolder !== activeFilterFolder) return false;
+        
+        if (!query) return true;
+
         const tMatch = (n.title || "").toLowerCase().includes(query);
-        const cMatch = n.content?.type === 'checklist'
-          ? n.content.items.some(i => i.text.toLowerCase().includes(query))
-          : (n.content?.text || "").toLowerCase().includes(query);
+        let cMatch = false;
+        if (n.content && n.content.type === 'checklist' && Array.isArray(n.content.items)) {
+          cMatch = n.content.items.some(i => (i.text || "").toLowerCase().includes(query));
+        } else if (n.content && typeof n.content.text === 'string') {
+          cMatch = n.content.text.toLowerCase().includes(query);
+        } else if (typeof n.content === 'string') {
+          cMatch = n.content.toLowerCase().includes(query);
+        }
         return tMatch || cMatch;
       });
 
-      const pinned = filtered.filter(n => n.is_pinned);
-      const others = filtered.filter(n => !n.is_pinned);
+      const pinned = filtered.filter(n => n && n.is_pinned);
+      const others = filtered.filter(n => n && !n.is_pinned);
 
-      document.getElementById("pinned-grid").innerHTML = pinned.map(buildNoteCardHtml).join("");
-      document.getElementById("notes-grid").innerHTML = others.map(buildNoteCardHtml).join("");
-      document.getElementById("pinned-section").classList.toggle("hidden", pinned.length === 0);
-      lucide.createIcons();
+      const pinnedGrid = document.getElementById("pinned-grid");
+      const notesGrid = document.getElementById("notes-grid");
+      const pinnedSection = document.getElementById("pinned-section");
+
+      if (pinnedGrid) pinnedGrid.innerHTML = pinned.map(buildNoteCardHtml).join("");
+      if (notesGrid) notesGrid.innerHTML = others.map(buildNoteCardHtml).join("");
+      if (pinnedSection) pinnedSection.classList.toggle("hidden", pinned.length === 0);
+
+      if (window.lucide) {
+        lucide.createIcons();
+      }
     }
 
     function buildNoteCardHtml(n) {
+      if (!n) return '';
       let bodyHtml = '';
-      if (n.content?.type === 'checklist') {
+      if (n.content && n.content.type === 'checklist' && Array.isArray(n.content.items)) {
         bodyHtml = `<div class="space-y-1 mt-2">` + n.content.items.map((it, idx) => `
           <div onclick="toggleNoteCheckItem('${n.id}', ${idx})" class="flex items-center gap-2 cursor-pointer py-0.5">
             <i data-lucide="${it.done ? 'check-square' : 'square'}" class="w-3.5 h-3.5 ${it.done ? 'text-emerald-400' : 'text-zinc-600'}"></i>
-            <span class="text-xs ${it.done ? 'line-through text-zinc-600' : 'text-zinc-300'}">${escapeHtml(it.text)}</span>
+            <span class="text-xs ${it.done ? 'line-through text-zinc-600' : 'text-zinc-300'}">${escapeHtml(it.text || '')}</span>
           </div>
         `).join("") + `</div>`;
       } else {
-        bodyHtml = `<div class="md-content text-xs text-zinc-400 mt-2 break-words leading-relaxed">${marked.parse(n.content?.text || '')}</div>`;
+        const rawText = (n.content && n.content.text) ? n.content.text : (typeof n.content === 'string' ? n.content : '');
+        let parsedHtml = '';
+        try {
+          parsedHtml = (window.marked && marked.parse) ? marked.parse(rawText) : escapeHtml(rawText);
+        } catch(e) {
+          parsedHtml = escapeHtml(rawText);
+        }
+        bodyHtml = `<div class="md-content text-xs text-zinc-400 mt-2 break-words leading-relaxed">${parsedHtml}</div>`;
       }
+
+      const dateStr = n.updated_at ? new Date(n.updated_at).toLocaleDateString('th-TH') : '';
 
       return `
         <div class="sigil-card color-${n.color || 'default'} p-4 flex flex-col justify-between group">
@@ -811,11 +847,11 @@
                 <i data-lucide="pin" class="w-3.5 h-3.5 ${n.is_pinned ? 'text-amber-400 fill-amber-400' : ''}"></i>
               </button>
             </div>
-            <span class="text-[9px] text-zinc-500 font-mono uppercase tracking-widest block mt-0.5">#${n.folder}</span>
+            <span class="text-[9px] text-zinc-500 font-mono uppercase tracking-widest block mt-0.5">#${escapeHtml(n.folder || 'GENERAL')}</span>
             ${bodyHtml}
           </div>
           <div class="flex items-center justify-between pt-3 mt-3 border-t border-zinc-900 text-[10px] text-zinc-600">
-            <span>${new Date(n.updated_at).toLocaleDateString('th-TH')}</span>
+            <span>${dateStr}</span>
             <button onclick="deleteNote('${n.id}')" class="hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             </button>
