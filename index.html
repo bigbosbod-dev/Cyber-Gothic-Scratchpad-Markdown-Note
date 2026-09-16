@@ -348,7 +348,7 @@
               <button onclick="resetPomodoro()" class="px-4 py-2.5 border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white text-xs uppercase font-mono">
                 RESET
               </button>
-              <button onclick="switchPomoMode('break')" class="px-3 py-2.5 border border-zinc-800 hover:border-emerald-600 text-emerald-400 text-xs font-mono">
+              <button id="pomo-mode-btn" onclick="togglePomoSessionMode()" class="px-3 py-2.5 border border-zinc-800 hover:border-emerald-600 text-emerald-400 text-xs font-mono">
                 SHORT BREAK (5M)
               </button>
             </div>
@@ -605,22 +605,28 @@
       }
     }
 
-    // Sync save to Supabase
+    // Sync save to Supabase via Upsert
     async function syncSaveCategory(category) {
-      if (!currentCryptoKey) return;
-      const dataToSave = appData[category];
-      const encrypted = await encryptData(dataToSave);
-      
-      const { data: existing } = await supabaseClient
-        .from('study_vault')
-        .select('id')
-        .eq('category', category)
-        .maybeSingle();
+      if (!currentCryptoKey || !currentUser) return;
+      try {
+        const dataToSave = appData[category];
+        const encrypted = await encryptData(dataToSave);
+        
+        const { error } = await supabaseClient
+          .from('study_vault')
+          .upsert({
+            user_id: currentUser.id,
+            category: category,
+            payload: encrypted,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id,category' });
 
-      if (existing) {
-        await supabaseClient.from('study_vault').update({ payload: encrypted, updated_at: new Date().toISOString() }).eq('id', existing.id);
-      } else {
-        await supabaseClient.from('study_vault').insert([{ category, payload: encrypted, user_id: currentUser.id }]);
+        if (error) {
+          console.error("Save error:", error);
+          showToast("บันทึกไม่สำเร็จ: " + error.message, "error");
+        }
+      } catch (err) {
+        console.error("Encrypt error:", err);
       }
     }
 
@@ -725,17 +731,17 @@
       };
 
       appData.notes.unshift(note);
-      await syncSaveCategory('keep_notes');
-      collapseCreateBox();
       renderNotes();
+      collapseCreateBox();
+      await syncSaveCategory('keep_notes');
       showToast("บันทึกโน้ตสำเร็จ ✦");
     }
 
     async function deleteNote(id) {
       if (!confirm("ต้องการลบโน้ตนี้ใช่หรือไม่?")) return;
       appData.notes = appData.notes.filter(n => n.id !== id);
-      await syncSaveCategory('keep_notes');
       renderNotes();
+      await syncSaveCategory('keep_notes');
       showToast("ลบโน้ตเรียบร้อย", "info");
     }
 
@@ -743,8 +749,8 @@
       const note = appData.notes.find(n => n.id === id);
       if (!note) return;
       note.is_pinned = !note.is_pinned;
-      await syncSaveCategory('keep_notes');
       renderNotes();
+      await syncSaveCategory('keep_notes');
     }
 
     async function toggleNoteCheckItem(noteId, idx) {
@@ -856,21 +862,21 @@
 
       const item = { id: 'class_' + Date.now(), code, name, day, start, end, room };
       appData.timetable.push(item);
+      renderTimetable();
+      checkUpcomingClass();
       await syncSaveCategory('timetable');
 
       document.getElementById("class-code").value = "";
       document.getElementById("class-name").value = "";
       document.getElementById("class-room").value = "";
-      renderTimetable();
-      checkUpcomingClass();
       showToast("เพิ่มคาบเรียนสำเร็จ ✦");
     }
 
     async function deleteClass(id) {
       appData.timetable = appData.timetable.filter(c => c.id !== id);
-      await syncSaveCategory('timetable');
       renderTimetable();
       checkUpcomingClass();
+      await syncSaveCategory('timetable');
     }
 
     function renderTimetable() {
@@ -959,12 +965,12 @@
       };
 
       appData.assignments.push(task);
+      renderKanban();
       await syncSaveCategory('assignments');
 
       document.getElementById("kanban-title").value = "";
       document.getElementById("kanban-subject").value = "";
       document.getElementById("kanban-deadline").value = "";
-      renderKanban();
       showToast("เพิ่มการบ้านลงกระดานแล้ว");
     }
 
@@ -972,14 +978,14 @@
       const task = appData.assignments.find(t => t.id === id);
       if (!task) return;
       task.status = newStatus;
-      await syncSaveCategory('assignments');
       renderKanban();
+      await syncSaveCategory('assignments');
     }
 
     async function deleteKanbanTask(id) {
       appData.assignments = appData.assignments.filter(t => t.id !== id);
-      await syncSaveCategory('assignments');
       renderKanban();
+      await syncSaveCategory('assignments');
     }
 
     function renderKanban() {
@@ -1059,12 +1065,34 @@
       updatePomoTimerDisplay();
     }
 
+    function togglePomoSessionMode() {
+      if (isBreakMode) {
+        switchPomoMode('focus');
+      } else {
+        switchPomoMode('break');
+      }
+    }
+
     function switchPomoMode(mode) {
       isBreakMode = (mode === 'break');
-      document.getElementById("pomo-mode-badge").innerText = isBreakMode ? "SHORT BREAK" : "FOCUS SESSION";
-      document.getElementById("pomo-mode-badge").className = isBreakMode 
-        ? "text-[11px] px-3 py-1 bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 font-mono uppercase tracking-widest mb-4"
-        : "text-[11px] px-3 py-1 bg-rose-950/60 border border-rose-500/50 text-rose-300 font-mono uppercase tracking-widest mb-4";
+      const badge = document.getElementById("pomo-mode-badge");
+      const modeBtn = document.getElementById("pomo-mode-btn");
+
+      if (isBreakMode) {
+        badge.innerText = "SHORT BREAK";
+        badge.className = "text-[11px] px-3 py-1 bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 font-mono uppercase tracking-widest mb-4";
+        if (modeBtn) {
+          modeBtn.innerText = "FOCUS (25M)";
+          modeBtn.className = "px-3 py-2.5 border border-zinc-800 hover:border-rose-600 text-rose-400 text-xs font-mono";
+        }
+      } else {
+        badge.innerText = "FOCUS SESSION";
+        badge.className = "text-[11px] px-3 py-1 bg-rose-950/60 border border-rose-500/50 text-rose-300 font-mono uppercase tracking-widest mb-4";
+        if (modeBtn) {
+          modeBtn.innerText = "SHORT BREAK (5M)";
+          modeBtn.className = "px-3 py-2.5 border border-zinc-800 hover:border-emerald-600 text-emerald-400 text-xs font-mono";
+        }
+      }
       resetPomodoro();
     }
 
@@ -1072,8 +1100,8 @@
       if (!isBreakMode) {
         const subject = document.getElementById("pomo-subject-input").value.trim() || 'ทั่วไป';
         appData.pomo_stats[subject] = (appData.pomo_stats[subject] || 0) + 25;
-        await syncSaveCategory('pomodoro_stats');
         renderPomodoroStats();
+        await syncSaveCategory('pomodoro_stats');
         showToast(`ยินดีด้วย! คุณสะสมเวลาอ่านวิชา ${subject} เพิ่มอีก 25 นาที ✦`);
         switchPomoMode('break');
       } else {
