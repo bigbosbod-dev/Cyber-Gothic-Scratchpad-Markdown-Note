@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>† SECURE CLOUD VAULT // SUPABASE †</title>
+  <title>† SECURE CLOUD VAULT // AES-256 †</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -57,20 +57,42 @@
     <!-- Header -->
     <header class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
       <div>
-        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ ENCRYPTED ACCESS PROTOCOL ✦</span>
+        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ ENCRYPTED CLOUD PROTOCOL ✦</span>
         <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase tracking-wider mt-0.5">
           PRIVATE // CLOUD VAULT
         </h1>
       </div>
       
       <div id="auth-controls" class="text-right">
-        <div class="text-[10px] text-emerald-400 font-mono tracking-wider uppercase mb-1">● SUPABASE LINKED</div>
-        <span class="text-[11px] text-zinc-500 uppercase tracking-widest">MULTI-DEVICE SYNC</span>
+        <span class="text-[10px] text-zinc-600 font-mono tracking-wider uppercase">LOCKED</span>
       </div>
     </header>
 
-    <!-- Note Pad -->
-    <div id="vault-content">
+    <!-- Master Password Screen -->
+    <div id="lock-screen" class="sigil-card p-8 md:p-12 text-center my-8">
+      <div class="text-2xl mb-3">🔒</div>
+      <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2">ENTER MASTER KEY</h2>
+      <p class="text-xs text-zinc-500 max-w-sm mx-auto mb-6">กรอกรหัสผ่านเพื่อปลดล็อกและถอดรหัส Cloud Vault (ต้องใช้รหัสเดียวกันทุกอุปกรณ์)</p>
+      
+      <div class="max-w-xs mx-auto space-y-3">
+        <input 
+          type="password" 
+          id="master-pass" 
+          placeholder="••••••••••••" 
+          onkeydown="if(event.key==='Enter') unlockAndLoad()"
+          class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono tracking-widest text-sm"
+        >
+        <button 
+          onclick="unlockAndLoad()" 
+          class="w-full py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg"
+        >
+          ✦ UNLOCK VAULT ✦
+        </button>
+      </div>
+    </div>
+
+    <!-- Note Pad (Unlocked) -->
+    <div id="vault-screen" class="hidden">
       <main class="sigil-card p-4 md:p-6 mb-4">
         <input 
           type="text" 
@@ -82,7 +104,7 @@
         <textarea 
           id="note-body" 
           rows="16" 
-          placeholder="พิมพ์ข้อความที่นี่... ข้อมูลจะบันทึกและซิงก์ข้ามอุปกรณ์อัตโนมัติ..."
+          placeholder="พิมพ์ข้อความที่นี่... ข้อมูลจะถูกเข้ารหัสก่อนส่งขึ้น Cloud อัตโนมัติ..."
           oninput="handleInput()"
           class="w-full bg-transparent text-zinc-200 placeholder:text-zinc-700 text-sm leading-relaxed outline-none resize-none font-mono"
         ></textarea>
@@ -91,17 +113,15 @@
       <!-- Toolbar Actions -->
       <footer class="flex flex-wrap items-center justify-between gap-3 text-xs">
         <div class="flex gap-2">
-          <button onclick="downloadNote()" class="px-3 py-2 border border-zinc-700 hover:border-zinc-300 bg-zinc-950 text-zinc-300 hover:text-white transition-all uppercase tracking-wider flex items-center gap-1.5">
-            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <button onclick="downloadNote()" class="px-3 py-2 border border-zinc-700 hover:border-zinc-300 bg-zinc-950 text-zinc-300 hover:text-white transition-all uppercase tracking-wider">
             EXPORT .TXT
           </button>
-          <button onclick="loadNote()" class="px-3 py-2 border border-zinc-700 hover:border-zinc-300 bg-zinc-950 text-zinc-300 hover:text-white transition-all uppercase tracking-wider flex items-center gap-1.5">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            SYNC NOW
+          <button onclick="lockVault()" class="px-3 py-2 border border-zinc-700 hover:border-red-500 bg-zinc-950 text-zinc-400 hover:text-red-400 transition-all uppercase tracking-wider">
+            LOCK NOW
           </button>
         </div>
         <div class="text-right">
-          <span id="sync-status" class="text-[10px] text-zinc-500 font-mono tracking-widest uppercase">IDLE</span>
+          <span id="sync-status" class="text-[10px] text-emerald-400 font-mono tracking-widest uppercase">● CLOUD SYNCED</span>
           <p id="word-count" class="text-[10px] text-zinc-600 mt-0.5">0 WORDS | 0 CHARS</p>
         </div>
       </footer>
@@ -112,57 +132,101 @@
   <script>
     const SUPABASE_URL = "https://ljotkgjiudazeutfxvei.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_i6aEENM6sSGPsXDJB0Cpvg_ThUWPG7w";
-
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentCryptoKey = null;
     let saveTimeout = null;
 
-    async function loadNote() {
-      setSyncStatus('loading');
-      try {
-        const { data, error } = await supabaseClient
-          .from('notes')
-          .select('*')
-          .eq('id', 'main_vault')
-          .single();
+    async function deriveKey(passphrase) {
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(passphrase), { name: "PBKDF2" }, false, ["deriveKey"]);
+      return crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt: enc.encode("cyber_gothic_vault_salt"), iterations: 100000, hash: "SHA-256" },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    }
 
+    async function unlockAndLoad() {
+      const pass = document.getElementById("master-pass").value;
+      if (!pass) return alert("กรุณาใส่รหัสผ่าน");
+
+      try {
+        currentCryptoKey = await deriveKey(pass);
+        
+        // ดึงข้อมูล Ciphertext จาก Supabase
+        const { data, error } = await supabaseClient.from('notes').select('*').eq('id', 'main_vault').single();
         if (error && error.code !== 'PGRST116') throw error;
 
-        if (data) {
-          if (document.activeElement !== document.getElementById('note-title')) {
-            document.getElementById('note-title').value = data.title || '';
+        if (data && data.body) {
+          try {
+            const parsedPayload = JSON.parse(data.body);
+            if (parsedPayload.iv && parsedPayload.ciphertext) {
+              const decrypted = await crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: new Uint8Array(parsedPayload.iv) },
+                currentCryptoKey,
+                new Uint8Array(parsedPayload.ciphertext)
+              );
+              const dec = new TextDecoder();
+              const decryptedNote = JSON.parse(dec.decode(decrypted));
+              document.getElementById("note-title").value = decryptedNote.title || "";
+              document.getElementById("note-body").value = decryptedNote.body || "";
+            } else {
+              document.getElementById("note-title").value = data.title || "";
+              document.getElementById("note-body").value = data.body || "";
+            }
+          } catch (e) {
+            return alert("รหัสผ่านไม่ถูกต้อง หรือข้อมูลถูกเข้ารหัสด้วยรหัสอื่น!");
           }
-          if (document.activeElement !== document.getElementById('note-body')) {
-            document.getElementById('note-body').value = data.body || '';
-          }
-          updateStats();
         }
-        setSyncStatus('synced');
+
+        document.getElementById("lock-screen").classList.add("hidden");
+        document.getElementById("vault-screen").classList.remove("hidden");
+        document.getElementById("auth-controls").innerHTML = `
+          <div class="text-[10px] text-emerald-400 font-mono tracking-wider uppercase mb-1">● VAULT UNLOCKED</div>
+          <button onclick="lockVault()" class="text-[10px] text-zinc-500 hover:text-zinc-200 underline uppercase tracking-widest">LOCK</button>
+        `;
+        updateStats();
       } catch (err) {
-        console.error(err);
-        setSyncStatus('error');
+        alert("เกิดข้อผิดพลาด: " + err.message);
       }
     }
 
     function handleInput() {
+      if (!currentCryptoKey) return;
       setSyncStatus('saving');
       updateStats();
 
       clearTimeout(saveTimeout);
       saveTimeout = setTimeout(async () => {
-        const title = document.getElementById('note-title').value;
-        const body = document.getElementById('note-body').value;
-
         try {
-          const { error } = await supabaseClient
-            .from('notes')
-            .upsert({
-              id: 'main_vault',
-              title: title,
-              body: body,
-              updated_at: new Date().toISOString()
-            });
+          const title = document.getElementById('note-title').value;
+          const body = document.getElementById('note-body').value;
+          const rawText = JSON.stringify({ title, body });
 
-          if (error) throw error;
+          // เข้ารหัสลับ AES-256 ก่อนส่งขึ้น Supabase
+          const enc = new TextEncoder();
+          const iv = crypto.getRandomValues(new Uint8Array(12));
+          const encrypted = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv: iv },
+            currentCryptoKey,
+            enc.encode(rawText)
+          );
+
+          const payload = JSON.stringify({
+            iv: Array.from(iv),
+            ciphertext: Array.from(new Uint8Array(encrypted))
+          });
+
+          await supabaseClient.from('notes').upsert({
+            id: 'main_vault',
+            title: '[ENCRYPTED ENTRY]',
+            body: payload,
+            updated_at: new Date().toISOString()
+          });
+
           setSyncStatus('synced');
         } catch (err) {
           console.error(err);
@@ -171,16 +235,23 @@
       }, 600);
     }
 
+    function lockVault() {
+      currentCryptoKey = null;
+      document.getElementById("master-pass").value = "";
+      document.getElementById("note-title").value = "";
+      document.getElementById("note-body").value = "";
+      document.getElementById("vault-screen").classList.add("hidden");
+      document.getElementById("lock-screen").classList.remove("hidden");
+      document.getElementById("auth-controls").innerHTML = `<span class="text-[10px] text-zinc-600 font-mono tracking-wider uppercase">LOCKED</span>`;
+    }
+
     function setSyncStatus(state) {
       const el = document.getElementById('sync-status');
       if (state === 'saving') {
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-ping mr-1"></span> SAVING...`;
+        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-ping mr-1"></span> ENCRYPTING & SAVING...`;
         el.className = "text-[10px] text-amber-400 font-mono tracking-widest uppercase";
-      } else if (state === 'loading') {
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block animate-pulse mr-1"></span> SYNCING...`;
-        el.className = "text-[10px] text-blue-400 font-mono tracking-widest uppercase";
       } else if (state === 'synced') {
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span> CLOUD SYNCED`;
+        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span> CLOUD SYNCED & ENCRYPTED`;
         el.className = "text-[10px] text-emerald-400 font-mono tracking-widest uppercase";
       } else {
         el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-red-400 inline-block mr-1"></span> SYNC ERROR`;
@@ -204,11 +275,6 @@
       a.download = `${title.toLowerCase().replace(/\s+/g, '-')}.txt`;
       a.click();
     }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      lucide.createIcons();
-      loadNote();
-    });
   </script>
 </body>
 </html>
