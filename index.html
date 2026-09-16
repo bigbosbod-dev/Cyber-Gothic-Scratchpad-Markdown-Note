@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>† SECURE CLOUD VAULT // AES-256 †</title>
+  <title>† GOTHIC KEEP // CLOUD VAULT †</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Space+Mono:wght@400;700&family=Prompt:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -17,113 +18,121 @@
       background-color: #050507;
       background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
     }
-    .gothic-title {
-      font-family: 'Cinzel', serif;
-      letter-spacing: 0.2em;
-    }
+    .gothic-title { font-family: 'Cinzel', serif; letter-spacing: 0.15em; }
     .sigil-card {
-      background: rgba(10, 10, 14, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
-      position: relative;
+      background: rgba(12, 12, 16, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+      transition: all 0.2s ease;
     }
-    .sigil-card::before {
-      content: "†";
-      position: absolute;
-      top: -8px;
-      left: 12px;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.4);
-      background: #050507;
-      padding: 0 4px;
+    .sigil-card:hover {
+      border-color: rgba(255, 255, 255, 0.25);
     }
-    .sigil-card::after {
-      content: "†";
-      position: absolute;
-      bottom: -8px;
-      right: 12px;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.4);
-      background: #050507;
-      padding: 0 4px;
+    .pinned-border {
+      border-color: rgba(251, 191, 36, 0.4) !important;
     }
   </style>
 </head>
-<body class="text-zinc-300 antialiased min-h-screen py-8 px-4 flex flex-col justify-between">
+<body class="text-zinc-300 min-h-screen py-8 px-4 md:px-8 flex flex-col justify-between">
 
-  <div class="max-w-3xl mx-auto w-full">
+  <div class="max-w-5xl mx-auto w-full">
     
-    <!-- Header -->
-    <header class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
+    <!-- Top Header -->
+    <header class="flex items-center justify-between mb-8 pb-4 border-b border-zinc-800/80">
       <div>
-        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ ENCRYPTED CLOUD PROTOCOL ✦</span>
-        <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase tracking-wider mt-0.5">
-          PRIVATE // CLOUD VAULT
+        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ AES-256 VAULT PROTOCOL ✦</span>
+        <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase mt-0.5">
+          GOTHIC // KEEP
         </h1>
       </div>
-      
-      <div id="auth-controls" class="text-right">
-        <span class="text-[10px] text-zinc-600 font-mono tracking-wider uppercase">LOCKED</span>
+      <div id="auth-status" class="text-right">
+        <span class="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">LOCKED</span>
       </div>
     </header>
 
-    <!-- Master Password Lock Screen -->
-    <div id="lock-screen" class="sigil-card p-8 md:p-12 text-center my-8">
+    <!-- Master Key Lock Screen -->
+    <div id="lock-screen" class="sigil-card max-w-md mx-auto p-8 text-center my-12">
       <div class="text-3xl mb-3">🔒</div>
       <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2">ENTER MASTER KEY</h2>
-      <p class="text-xs text-zinc-500 max-w-sm mx-auto mb-6">กรอกรหัสผ่านเพื่อปลดล็อกและถอดรหัส Cloud Vault (ใส่รหัสเดียวกันทุกเครื่องเพื่อซิงก์)</p>
+      <p class="text-xs text-zinc-500 mb-6">กรอกรหัสผ่านเพื่อถอดรหัสกระดานโน้ตของคุณ (ใช้รหัสเดียวกันทุกอุปกรณ์)</p>
       
-      <div class="max-w-xs mx-auto space-y-3">
-        <input 
-          type="password" 
-          id="master-pass" 
-          placeholder="••••••••••••" 
-          onkeydown="if(event.key==='Enter') unlockAndLoad()"
-          class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono tracking-widest text-sm"
-        >
-        <button 
-          onclick="unlockAndLoad()" 
-          class="w-full py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg"
-        >
-          ✦ UNLOCK VAULT ✦
-        </button>
-      </div>
+      <input 
+        type="password" 
+        id="master-pass" 
+        placeholder="••••••••••••" 
+        onkeydown="if(event.key==='Enter') unlockVault()"
+        class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono tracking-widest text-sm mb-4"
+      >
+      <button 
+        onclick="unlockVault()" 
+        class="w-full py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95"
+      >
+        ✦ UNLOCK KEEP ✦
+      </button>
     </div>
 
-    <!-- Note Pad (Unlocked) -->
-    <div id="vault-screen" class="hidden">
-      <main class="sigil-card p-4 md:p-6 mb-4">
+    <!-- Keep Workspace (Unlocked) -->
+    <div id="keep-screen" class="hidden space-y-8">
+      
+      <!-- Top Actions Bar: Search + Filter -->
+      <div class="flex items-center justify-between gap-4">
+        <div class="relative flex-1 max-w-md">
+          <i data-lucide="search" class="w-4 h-4 text-zinc-500 absolute left-3 top-2.5"></i>
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="ค้นหาบันทึก..." 
+            oninput="renderNotes()"
+            class="w-full bg-zinc-900/80 border border-zinc-800 pl-9 pr-4 py-2 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-zinc-500 font-mono"
+          >
+        </div>
+        <button onclick="lockVault()" class="px-3 py-2 border border-zinc-800 hover:border-red-500 text-zinc-500 hover:text-red-400 text-xs uppercase tracking-wider transition-all">
+          LOCK
+        </button>
+      </div>
+
+      <!-- Keep Create Box (Take a note...) -->
+      <div class="sigil-card max-w-xl mx-auto p-4 relative" id="create-box">
         <input 
           type="text" 
-          id="note-title" 
-          placeholder="UNTITLED ENTRY..." 
-          oninput="handleInput()"
-          class="w-full bg-transparent text-white font-bold text-lg md:text-xl border-b border-zinc-800/80 pb-3 mb-4 outline-none placeholder:text-zinc-700 tracking-wide font-mono"
+          id="new-title" 
+          placeholder="หัวข้อบันทึก..." 
+          class="w-full bg-transparent text-white font-bold text-sm pb-2 mb-2 border-b border-zinc-800 outline-none placeholder:text-zinc-600 font-mono hidden"
         >
         <textarea 
-          id="note-body" 
-          rows="16" 
-          placeholder="พิมพ์ข้อความที่นี่... ข้อมูลจะถูกเข้ารหัสก่อนส่งขึ้น Supabase อัตโนมัติ..."
-          oninput="handleInput()"
-          class="w-full bg-transparent text-zinc-200 placeholder:text-zinc-700 text-sm leading-relaxed outline-none resize-none font-mono"
+          id="new-body" 
+          rows="1" 
+          placeholder="จดบันทึกข้อความ..." 
+          onfocus="expandCreateBox()"
+          class="w-full bg-transparent text-zinc-200 text-xs leading-relaxed placeholder:text-zinc-500 outline-none resize-none font-mono"
         ></textarea>
-      </main>
+        <div id="create-actions" class="hidden flex items-center justify-between pt-3 mt-2 border-t border-zinc-800/60">
+          <label class="flex items-center gap-1.5 text-[11px] text-zinc-500 cursor-pointer">
+            <input type="checkbox" id="new-pin" class="accent-amber-400"> ปักหมุดไว้บนสุด
+          </label>
+          <div class="flex gap-2">
+            <button onclick="collapseCreateBox()" class="text-[11px] text-zinc-500 hover:text-white px-2 py-1 uppercase">ยกเลิก</button>
+            <button onclick="createNote()" class="text-[11px] bg-white text-black font-bold px-4 py-1 uppercase hover:bg-zinc-200 transition-all">บันทึก</button>
+          </div>
+        </div>
+      </div>
 
-      <!-- Toolbar Actions -->
-      <footer class="flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div class="flex gap-2">
-          <button onclick="downloadNote()" class="px-3 py-2 border border-zinc-700 hover:border-zinc-300 bg-zinc-950 text-zinc-300 hover:text-white transition-all uppercase tracking-wider">
-            EXPORT .TXT
-          </button>
-          <button onclick="lockVault()" class="px-3 py-2 border border-zinc-700 hover:border-red-500 bg-zinc-950 text-zinc-400 hover:text-red-400 transition-all uppercase tracking-wider">
-            LOCK NOW
-          </button>
-        </div>
-        <div class="text-right">
-          <span id="sync-status" class="text-[10px] text-emerald-400 font-mono tracking-widest uppercase">● CLOUD SYNCED</span>
-          <p id="word-count" class="text-[10px] text-zinc-600 mt-0.5">0 WORDS | 0 CHARS</p>
-        </div>
-      </footer>
+      <!-- Pinned Notes Section -->
+      <div id="pinned-section" class="hidden">
+        <h3 class="text-[10px] text-amber-400/80 tracking-[0.2em] uppercase font-mono mb-3 flex items-center gap-1.5">
+          <i data-lucide="pin" class="w-3 h-3"></i> PINNED NOTES
+        </h3>
+        <div id="pinned-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+
+      <!-- Other Notes Section -->
+      <div>
+        <h3 id="others-label" class="text-[10px] text-zinc-500 tracking-[0.2em] uppercase font-mono mb-3 flex items-center gap-1.5">
+          ALL NOTES
+        </h3>
+        <div id="notes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+
     </div>
 
   </div>
@@ -134,13 +143,13 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentCryptoKey = null;
-    let saveTimeout = null;
+    let localNotes = [];
 
     async function deriveKey(passphrase) {
       const enc = new TextEncoder();
       const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(passphrase), { name: "PBKDF2" }, false, ["deriveKey"]);
       return crypto.subtle.deriveKey(
-        { name: "PBKDF2", salt: enc.encode("cyber_gothic_vault_salt"), iterations: 100000, hash: "SHA-256" },
+        { name: "PBKDF2", salt: enc.encode("cyber_gothic_keep_salt"), iterations: 100000, hash: "SHA-256" },
         keyMaterial,
         { name: "AES-GCM", length: 256 },
         false,
@@ -148,129 +157,162 @@
       );
     }
 
-    async function unlockAndLoad() {
+    async function encryptData(objectData) {
+      const enc = new TextEncoder();
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const encrypted = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv: iv },
+        currentCryptoKey,
+        enc.encode(JSON.stringify(objectData))
+      );
+      return JSON.stringify({ iv: Array.from(iv), ciphertext: Array.from(new Uint8Array(encrypted)) });
+    }
+
+    async function decryptData(payloadStr) {
+      const parsed = JSON.parse(payloadStr);
+      const decrypted = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: new Uint8Array(parsed.iv) },
+        currentCryptoKey,
+        new Uint8Array(parsed.ciphertext)
+      );
+      return JSON.parse(new TextDecoder().decode(decrypted));
+    }
+
+    async function unlockVault() {
       const pass = document.getElementById("master-pass").value;
       if (!pass) return alert("กรุณาใส่รหัสผ่าน");
 
       try {
         currentCryptoKey = await deriveKey(pass);
-        
-        const { data, error } = await supabaseClient.from('notes').select('*').eq('id', 'main_vault').single();
-        if (error && error.code !== 'PGRST116') throw error;
-
-        if (data && data.body) {
-          try {
-            const parsedPayload = JSON.parse(data.body);
-            if (parsedPayload.iv && parsedPayload.ciphertext) {
-              const decrypted = await crypto.subtle.decrypt(
-                { name: "AES-GCM", iv: new Uint8Array(parsedPayload.iv) },
-                currentCryptoKey,
-                new Uint8Array(parsedPayload.ciphertext)
-              );
-              const dec = new TextDecoder();
-              const decryptedNote = JSON.parse(dec.decode(decrypted));
-              document.getElementById("note-title").value = decryptedNote.title || "";
-              document.getElementById("note-body").value = decryptedNote.body || "";
-            } else {
-              document.getElementById("note-title").value = data.title || "";
-              document.getElementById("note-body").value = data.body || "";
-            }
-          } catch (e) {
-            return alert("รหัสผ่านไม่ถูกต้อง หรือยังไม่มีข้อมูลที่เข้ารหัสด้วยรหัสนี้");
-          }
-        }
+        await fetchNotes();
 
         document.getElementById("lock-screen").classList.add("hidden");
-        document.getElementById("vault-screen").classList.remove("hidden");
-        document.getElementById("auth-controls").innerHTML = `
-          <div class="text-[10px] text-emerald-400 font-mono tracking-wider uppercase mb-1">● VAULT UNLOCKED</div>
-          <button onclick="lockVault()" class="text-[10px] text-zinc-500 hover:text-zinc-200 underline uppercase tracking-widest">LOCK</button>
-        `;
-        updateStats();
+        document.getElementById("keep-screen").classList.remove("hidden");
+        document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-emerald-400 font-mono">● KEEP SYNCED</span>`;
+        lucide.createIcons();
       } catch (err) {
-        alert("เกิดข้อผิดพลาด: " + err.message);
+        alert("รหัสผ่านไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการโหลดข้อมูล");
       }
     }
 
-    function handleInput() {
-      if (!currentCryptoKey) return;
-      setSyncStatus('saving');
-      updateStats();
+    async function fetchNotes() {
+      const { data, error } = await supabaseClient.from('notes').select('*').order('updated_at', { ascending: false });
+      if (error) throw error;
 
-      clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(async () => {
+      localNotes = [];
+      for (const row of data || []) {
         try {
-          const title = document.getElementById('note-title').value;
-          const body = document.getElementById('note-body').value;
-          const rawText = JSON.stringify({ title, body });
-
-          const enc = new TextEncoder();
-          const iv = crypto.getRandomValues(new Uint8Array(12));
-          const encrypted = await crypto.subtle.encrypt(
-            { name: "AES-GCM", iv: iv },
-            currentCryptoKey,
-            enc.encode(rawText)
-          );
-
-          const payload = JSON.stringify({
-            iv: Array.from(iv),
-            ciphertext: Array.from(new Uint8Array(encrypted))
-          });
-
-          await supabaseClient.from('notes').upsert({
-            id: 'main_vault',
-            title: '[ENCRYPTED ENTRY]',
-            body: payload,
-            updated_at: new Date().toISOString()
-          });
-
-          setSyncStatus('synced');
-        } catch (err) {
-          console.error(err);
-          setSyncStatus('error');
+          const content = await decryptData(row.payload);
+          localNotes.push({ id: row.id, is_pinned: row.is_pinned, updated_at: row.updated_at, ...content });
+        } catch (e) {
+          console.warn("Skip note that failed decrypt", row.id);
         }
-      }, 600);
+      }
+      renderNotes();
+    }
+
+    function expandCreateBox() {
+      document.getElementById("new-title").classList.remove("hidden");
+      document.getElementById("create-actions").classList.remove("hidden");
+      document.getElementById("new-body").rows = 4;
+    }
+
+    function collapseCreateBox() {
+      document.getElementById("new-title").classList.add("hidden");
+      document.getElementById("create-actions").classList.add("hidden");
+      document.getElementById("new-body").rows = 1;
+      document.getElementById("new-title").value = "";
+      document.getElementById("new-body").value = "";
+      document.getElementById("new-pin").checked = false;
+    }
+
+    async function createNote() {
+      const title = document.getElementById("new-title").value.trim();
+      const body = document.getElementById("new-body").value.trim();
+      const isPinned = document.getElementById("new-pin").checked;
+
+      if (!title && !body) return collapseCreateBox();
+
+      const payload = await encryptData({ title, body });
+      const { data, error } = await supabaseClient.from('notes').insert([{ payload, is_pinned: isPinned }]).select().single();
+
+      if (error) return alert("บันทึกไม่สำเร็จ: " + error.message);
+
+      localNotes.unshift({ id: data.id, title, body, is_pinned: isPinned, updated_at: data.updated_at });
+      collapseCreateBox();
+      renderNotes();
+    }
+
+    async function togglePin(id) {
+      const note = localNotes.find(n => n.id === id);
+      if (!note) return;
+      const nextPin = !note.is_pinned;
+      note.is_pinned = nextPin;
+      await supabaseClient.from('notes').update({ is_pinned: nextPin }).eq('id', id);
+      renderNotes();
+    }
+
+    async function deleteNote(id) {
+      if (!confirm("ต้องการลบโน้ตนี้ใช่หรือไม่?")) return;
+      await supabaseClient.from('notes').delete().eq('id', id);
+      localNotes = localNotes.filter(n => n.id !== id);
+      renderNotes();
+    }
+
+    function renderNotes() {
+      const query = (document.getElementById("search-input")?.value || "").toLowerCase();
+      const filtered = localNotes.filter(n => (n.title || "").toLowerCase().includes(query) || (n.body || "").toLowerCase().includes(query));
+
+      const pinned = filtered.filter(n => n.is_pinned);
+      const others = filtered.filter(n => !n.is_pinned);
+
+      const pinnedGrid = document.getElementById("pinned-grid");
+      const notesGrid = document.getElementById("notes-grid");
+      const pinnedSection = document.getElementById("pinned-section");
+      const othersLabel = document.getElementById("others-label");
+
+      pinnedGrid.innerHTML = pinned.map(buildNoteCard).join("");
+      notesGrid.innerHTML = others.map(buildNoteCard).join("");
+
+      pinnedSection.classList.toggle("hidden", pinned.length === 0);
+      othersLabel.classList.toggle("hidden", pinned.length === 0);
+
+      lucide.createIcons();
+    }
+
+    function buildNoteCard(n) {
+      return `
+        <div class="sigil-card ${n.is_pinned ? 'pinned-border' : ''} p-4 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <h4 class="text-white font-bold text-sm tracking-wide break-words">${escapeHtml(n.title || 'UNTITLED')}</h4>
+              <button onclick="togglePin('${n.id}')" class="text-zinc-600 hover:text-amber-400 transition-colors p-1">
+                <i data-lucide="pin" class="w-3.5 h-3.5 ${n.is_pinned ? 'text-amber-400 fill-amber-400' : ''}"></i>
+              </button>
+            </div>
+            <p class="text-zinc-400 text-xs leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(n.body || '')}</p>
+          </div>
+          <div class="flex items-center justify-between pt-4 mt-3 border-t border-zinc-900 text-[10px] text-zinc-600">
+            <span>${new Date(n.updated_at).toLocaleDateString('th-TH')}</span>
+            <button onclick="deleteNote('${n.id}')" class="hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
     }
 
     function lockVault() {
       currentCryptoKey = null;
+      localNotes = [];
       document.getElementById("master-pass").value = "";
-      document.getElementById("note-title").value = "";
-      document.getElementById("note-body").value = "";
-      document.getElementById("vault-screen").classList.add("hidden");
+      document.getElementById("keep-screen").classList.add("hidden");
       document.getElementById("lock-screen").classList.remove("hidden");
-      document.getElementById("auth-controls").innerHTML = `<span class="text-[10px] text-zinc-600 font-mono tracking-wider uppercase">LOCKED</span>`;
-    }
-
-    function setSyncStatus(state) {
-      const el = document.getElementById('sync-status');
-      if (state === 'saving') {
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-ping mr-1"></span> ENCRYPTING & SAVING...`;
-        el.className = "text-[10px] text-amber-400 font-mono tracking-widest uppercase";
-      } else if (state === 'synced') {
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span> CLOUD SYNCED & ENCRYPTED`;
-        el.className = "text-[10px] text-emerald-400 font-mono tracking-widest uppercase";
-      } else {
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-red-400 inline-block mr-1"></span> SYNC ERROR`;
-        el.className = "text-[10px] text-red-400 font-mono tracking-widest uppercase";
-      }
-    }
-
-    function updateStats() {
-      const body = document.getElementById('note-body').value;
-      const chars = body.length;
-      const words = body.trim() ? body.trim().split(/\s+/).length : 0;
-      document.getElementById('word-count').innerText = `${words} WORDS | ${chars} CHARS`;
-    }
-
-    function downloadNote() {
-      const title = document.getElementById('note-title').value.trim() || 'vault-note';
-      const body = document.getElementById('note-body').value;
-      const blob = new Blob([`${title.toUpperCase()}\n\n${body}`], { type: 'text/plain;charset=utf-8' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${title.toLowerCase().replace(/\s+/g, '-')}.txt`;
-      a.click();
+      document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-zinc-600 font-mono">LOCKED</span>`;
     }
   </script>
 </body>
