@@ -47,6 +47,25 @@
       font-size: 11px;
       color: #a1a1aa;
     }
+
+    /* Toast Animation */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    .toast-msg {
+      pointer-events: auto;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .toast-msg.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
   </style>
 </head>
 <body class="text-zinc-300 min-h-screen py-6 px-4 md:px-8 flex flex-col justify-between" onmousemove="resetInactivityTimer()" onkeydown="resetInactivityTimer()">
@@ -220,6 +239,9 @@
     </div>
   </div>
 
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
   <script>
     const SUPABASE_URL = "https://ljotkgjiudazeutfxvei.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_i6aEENM6sSGPsXDJB0Cpvg_ThUWPG7w";
@@ -234,6 +256,34 @@
     let inactivityTimer = null;
     let noteIdToDelete = null;
     let isPermanentDelete = false;
+
+    // Toast Notification System
+    function showToast(message, type = 'success') {
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      
+      let borderClass = 'border-emerald-500/50 text-emerald-300';
+      let icon = '✦';
+      if (type === 'error') {
+        borderClass = 'border-rose-500/50 text-rose-300';
+        icon = '✕';
+      } else if (type === 'info') {
+        borderClass = 'border-zinc-500/50 text-zinc-300';
+        icon = 'ℹ';
+      }
+
+      toast.className = `toast-msg sigil-card ${borderClass} px-4 py-2.5 rounded border bg-zinc-950/95 shadow-2xl flex items-center gap-2 text-xs font-mono mb-2`;
+      toast.innerHTML = `<span class="font-bold">${icon}</span> <span>${message}</span>`;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => toast.classList.add("show"), 10);
+
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
 
     function resetInactivityTimer() {
       if (!currentCryptoKey) return;
@@ -289,6 +339,7 @@
         document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-emerald-400 font-mono">● VAULT ACTIVE</span>`;
         resetInactivityTimer();
         lucide.createIcons();
+        showToast("ปลดล็อก VAULT สำเร็จ");
       } catch (err) {
         alert("รหัสผ่านไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการโหลดข้อมูล");
       }
@@ -341,7 +392,6 @@
       const folderBar = document.getElementById("folder-bar");
       const folderSelect = document.getElementById("new-folder");
 
-      // Render Folder Filter Pills
       let pillsHtml = `<button onclick="setFilterFolder('ALL')" class="folder-pill px-3 py-1 ${activeFolderFilter === 'ALL' ? 'bg-zinc-800 text-white border border-zinc-600' : 'bg-zinc-900/60 border border-zinc-800 text-zinc-400'} font-mono uppercase tracking-wider transition-all">#ALL</button>`;
 
       customFolders.forEach(f => {
@@ -352,7 +402,6 @@
       pillsHtml += `<button onclick="promptCreateFolder()" class="px-2 py-1 border border-dashed border-zinc-700 hover:border-zinc-400 text-zinc-500 hover:text-white font-mono text-[11px] uppercase transition-all flex items-center gap-1">+ NEW FOLDER</button>`;
       folderBar.innerHTML = pillsHtml;
 
-      // Render Folder Dropdown Options
       let optionsHtml = '';
       customFolders.forEach(f => {
         optionsHtml += `<option value="${f}">FOLDER: ${f}</option>`;
@@ -370,6 +419,7 @@
       if (!customFolders.includes(cleanName)) {
         customFolders.push(cleanName);
         updateFolderUI();
+        showToast(`สร้างโฟลเดอร์ #${cleanName} สำเร็จ`);
       }
       setFilterFolder(cleanName);
     }
@@ -383,6 +433,7 @@
             customFolders.push(cleanName);
             updateFolderUI();
             select.value = cleanName;
+            showToast(`สร้างโฟลเดอร์ #${cleanName} สำเร็จ`);
             return;
           }
         }
@@ -490,6 +541,7 @@
 
       collapseCreateBox();
       renderNotes();
+      showToast("สร้างบันทึกและเข้ารหัสสำเร็จแล้ว ✦");
     }
 
     async function toggleCheckItem(noteId, itemIdx) {
@@ -509,6 +561,7 @@
       note.is_pinned = !note.is_pinned;
       await supabaseClient.from('notes').update({ is_pinned: note.is_pinned }).eq('id', id);
       renderNotes();
+      showToast(note.is_pinned ? "ปักหมุดบันทึกแล้ว" : "ยกเลิกการปักหมุดแล้ว", "info");
     }
 
     function openDeleteModal(id, permanent = false) {
@@ -532,6 +585,7 @@
       if (isPermanentDelete) {
         await supabaseClient.from('notes').delete().eq('id', id);
         localNotes = localNotes.filter(n => n.id !== id);
+        showToast("ทำลายบันทึกถาวรเรียบร้อย", "error");
       } else {
         const delTime = new Date().toISOString();
         await supabaseClient.from('notes').update({ is_deleted: true, deleted_at: delTime }).eq('id', id);
@@ -540,6 +594,7 @@
           note.is_deleted = true;
           note.deleted_at = delTime;
         }
+        showToast("ย้ายบันทึกลงถังขยะแล้ว", "info");
       }
       updateTrashCount();
       renderNotes();
@@ -554,11 +609,12 @@
       }
       updateTrashCount();
       renderNotes();
+      showToast("กู้คืนบันทึกกลับมาแล้ว ✦");
     }
 
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text);
-      alert("คัดลอกข้อความลงคลิปบอร์ดแล้ว!");
+      showToast("คัดลอกข้อความลงคลิปบอร์ดแล้ว");
     }
 
     function renderNotes() {
