@@ -609,7 +609,6 @@
 
         if (error) {
           console.error("Supabase Save Error:", error);
-          alert("บันทึกไม่สำเร็จ: " + error.message);
         }
       } catch (err) {
         console.error("Save error:", err);
@@ -617,7 +616,7 @@
     }
 
     async function syncLoadAllData() {
-      if (!currentUser) return;
+      if (!currentUser || !currentCryptoKey) return;
       const { data, error } = await supabaseClient
         .from('study_vault')
         .select('category, payload')
@@ -629,7 +628,9 @@
         for (const row of data) {
           try {
             const decrypted = await decryptData(row.payload);
-            if (row.category === 'keep_notes') appData.notes = Array.isArray(decrypted) ? decrypted : [];
+            if (row.category === 'keep_notes') {
+              appData.notes = Array.isArray(decrypted) ? decrypted : (decrypted?.notes || []);
+            }
             if (row.category === 'timetable') appData.timetable = Array.isArray(decrypted) ? decrypted : [];
             if (row.category === 'assignments') appData.assignments = Array.isArray(decrypted) ? decrypted : [];
             if (row.category === 'pomodoro_stats') appData.pomo_stats = decrypted || {};
@@ -723,7 +724,9 @@
         updated_at: new Date().toISOString()
       };
 
+      if (!Array.isArray(appData.notes)) appData.notes = [];
       appData.notes.unshift(note);
+      
       await syncSaveCategory('keep_notes');
 
       renderNotes();
