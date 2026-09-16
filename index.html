@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>† GOTHIC KEEP // CUSTOM FOLDERS †</title>
+  <title>† GOTHIC KEEP // AUTH & VAULT †</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,7 +48,6 @@
       color: #a1a1aa;
     }
 
-    /* Toast Animation */
     #toast-container {
       position: fixed;
       bottom: 24px;
@@ -75,21 +74,62 @@
     <!-- Top Header -->
     <header class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
       <div>
-        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ CYPHER VAULT WITH CUSTOM FOLDERS ✦</span>
+        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ IDENTITY & ENCRYPTION VAULT ✦</span>
         <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase mt-0.5">
           GOTHIC // KEEP
         </h1>
       </div>
       <div id="auth-status" class="text-right">
-        <span class="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">LOCKED</span>
+        <span class="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">NOT LOGGED IN</span>
       </div>
     </header>
 
-    <!-- Master Key Screen -->
-    <div id="lock-screen" class="sigil-card color-default max-w-md mx-auto p-8 text-center my-12">
+    <!-- STEP 1: Supabase Email/Password Auth Screen -->
+    <div id="auth-screen" class="sigil-card color-default max-w-md mx-auto p-8 text-center my-12">
+      <div class="text-3xl mb-3">🛡️</div>
+      <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2" id="auth-box-title">AUTHENTICATE ACCESS</h2>
+      <p class="text-xs text-zinc-500 mb-6 font-mono">ลงชื่อเข้าใช้ด้วยบัญชีของคุณเพื่อเชื่อมต่อฐานข้อมูลส่วนตัว</p>
+      
+      <div class="space-y-3 mb-4">
+        <input 
+          type="email" 
+          id="auth-email" 
+          placeholder="EMAIL ADDRESS" 
+          class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono text-xs"
+        >
+        <input 
+          type="password" 
+          id="auth-password" 
+          placeholder="PASSWORD" 
+          onkeydown="if(event.key==='Enter') handleAuthAction()"
+          class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono text-xs"
+        >
+      </div>
+
+      <button 
+        id="auth-submit-btn"
+        onclick="handleAuthAction()" 
+        class="w-full py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg mb-3"
+      >
+        ✦ SIGN IN ✦
+      </button>
+
+      <div class="text-center">
+        <button 
+          onclick="toggleAuthMode()" 
+          id="auth-toggle-mode-btn"
+          class="text-[11px] text-zinc-500 hover:text-zinc-300 underline font-mono tracking-wider"
+        >
+          ยังไม่มีบัญชี? กดที่นี่เพื่อสมัครสมาชิก (Sign Up)
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Master Key Screen (Double Security) -->
+    <div id="lock-screen" class="sigil-card color-default max-w-md mx-auto p-8 text-center my-12 hidden">
       <div class="text-3xl mb-3">🔒</div>
       <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2">ENTER MASTER KEY</h2>
-      <p class="text-xs text-zinc-500 mb-6">กรอกรหัสผ่านเพื่อถอดรหัสกระดานโน้ตของคุณ (ใช้รหัสเดียวกันทุกอุปกรณ์)</p>
+      <p class="text-xs text-zinc-500 mb-6">กรอก Master Key ของคุณเพื่อถอดรหัสข้อความ AES-256 (ใช้รหัสเดิมทุกอุปกรณ์)</p>
       
       <input 
         type="password" 
@@ -98,15 +138,23 @@
         onkeydown="if(event.key==='Enter') unlockVault()"
         class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono tracking-widest text-sm mb-4"
       >
-      <button 
-        onclick="unlockVault()" 
-        class="w-full py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg"
-      >
-        ✦ UNLOCK KEEP ✦
-      </button>
+      <div class="flex gap-2">
+        <button 
+          onclick="handleSignOut()" 
+          class="w-1/3 py-2.5 border border-zinc-800 text-zinc-500 hover:text-white font-mono text-xs uppercase tracking-wider transition-all"
+        >
+          SIGN OUT
+        </button>
+        <button 
+          onclick="unlockVault()" 
+          class="w-2/3 py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg"
+        >
+          ✦ UNLOCK KEEP ✦
+        </button>
+      </div>
     </div>
 
-    <!-- Keep Workspace -->
+    <!-- STEP 3: Keep Workspace -->
     <div id="keep-screen" class="hidden space-y-6">
       
       <!-- Top Bar: Search & Status -->
@@ -121,19 +169,20 @@
             class="w-full bg-zinc-900/80 border border-zinc-800 pl-9 pr-4 py-2 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-zinc-500 font-mono"
           >
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
           <span id="timer-display" class="text-[10px] text-zinc-600 font-mono hidden md:inline">AUTO-LOCK IN 5M</span>
-          <button onclick="lockVault()" class="px-3 py-1.5 border border-zinc-800 hover:border-red-500 text-zinc-500 hover:text-red-400 text-xs uppercase tracking-wider transition-all">
-            LOCK
+          <button onclick="lockVault()" title="Lock Screen" class="px-3 py-1.5 border border-zinc-800 hover:border-amber-500 text-zinc-500 hover:text-amber-400 text-xs uppercase tracking-wider transition-all flex items-center gap-1">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i> LOCK
+          </button>
+          <button onclick="handleSignOut()" title="Sign Out" class="px-3 py-1.5 border border-zinc-800 hover:border-red-500 text-zinc-500 hover:text-red-400 text-xs uppercase tracking-wider transition-all flex items-center gap-1">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i> LOGOUT
           </button>
         </div>
       </div>
 
       <!-- Dynamic Folder Filter Bar -->
       <div class="flex items-center justify-between gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
-        <div class="flex items-center gap-2 flex-wrap" id="folder-bar">
-          <!-- Folders injected by JavaScript -->
-        </div>
+        <div class="flex items-center gap-2 flex-wrap" id="folder-bar"></div>
         <button onclick="setFilterFolder('TRASH')" id="trash-pill" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-rose-950/80 hover:border-rose-700 text-rose-400 font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all whitespace-nowrap">
           <i data-lucide="trash" class="w-3.5 h-3.5"></i> TRASH (<span id="trash-count">0</span>)
         </button>
@@ -171,9 +220,7 @@
               <i data-lucide="check-square" class="w-3.5 h-3.5"></i> <span id="toggle-label">TO-DO</span>
             </button>
             
-            <!-- Dynamic Folder Selection -->
             <select id="new-folder" onchange="handleFolderSelectChange(this)" class="bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 py-1 px-2 outline-none font-mono">
-              <!-- Options populated by JS -->
             </select>
 
             <div class="flex items-center gap-1.5">
@@ -196,12 +243,10 @@
         </div>
       </div>
 
-      <!-- Trash Banner info -->
       <div id="trash-banner" class="hidden sigil-card p-3 border border-rose-900/60 bg-rose-950/20 text-rose-300 text-xs text-center font-mono">
         🗑️ บันทึกในถังขยะจะถูกทำลายถาวรอัตโนมัติหลังจากผ่านไป 30 วัน
       </div>
 
-      <!-- Pinned Notes Section -->
       <div id="pinned-section" class="hidden">
         <h3 class="text-[10px] text-amber-400/80 tracking-[0.2em] uppercase font-mono mb-3 flex items-center gap-1.5">
           <i data-lucide="pin" class="w-3 h-3"></i> PINNED NOTES
@@ -209,7 +254,6 @@
         <div id="pinned-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </div>
 
-      <!-- Other Notes Section -->
       <div>
         <h3 id="others-label" class="text-[10px] text-zinc-500 tracking-[0.2em] uppercase font-mono mb-3 flex items-center gap-1.5">
           ALL NOTES
@@ -239,7 +283,7 @@
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
+  <!-- Toast Notifications -->
   <div id="toast-container"></div>
 
   <script>
@@ -247,6 +291,7 @@
     const SUPABASE_ANON_KEY = "sb_publishable_i6aEENM6sSGPsXDJB0Cpvg_ThUWPG7w";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    let currentUser = null;
     let currentCryptoKey = null;
     let localNotes = [];
     let customFolders = ['GENERAL'];
@@ -256,12 +301,19 @@
     let inactivityTimer = null;
     let noteIdToDelete = null;
     let isPermanentDelete = false;
+    let isSignUpMode = false;
 
-    // Toast Notification System
+    window.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session && session.user) {
+        onUserAuthenticated(session.user);
+      }
+    });
+
     function showToast(message, type = 'success') {
       const container = document.getElementById("toast-container");
       const toast = document.createElement("div");
-      
       let borderClass = 'border-emerald-500/50 text-emerald-300';
       let icon = '✦';
       if (type === 'error') {
@@ -274,15 +326,59 @@
 
       toast.className = `toast-msg sigil-card ${borderClass} px-4 py-2.5 rounded border bg-zinc-950/95 shadow-2xl flex items-center gap-2 text-xs font-mono mb-2`;
       toast.innerHTML = `<span class="font-bold">${icon}</span> <span>${message}</span>`;
-      
       container.appendChild(toast);
-      
       setTimeout(() => toast.classList.add("show"), 10);
-
       setTimeout(() => {
         toast.classList.remove("show");
         setTimeout(() => toast.remove(), 300);
       }, 3000);
+    }
+
+    function toggleAuthMode() {
+      isSignUpMode = !isSignUpMode;
+      document.getElementById("auth-box-title").innerText = isSignUpMode ? "REGISTER NEW ACCOUNT" : "AUTHENTICATE ACCESS";
+      document.getElementById("auth-submit-btn").innerText = isSignUpMode ? "✦ SIGN UP ✦" : "✦ SIGN IN ✦";
+      document.getElementById("auth-toggle-mode-btn").innerText = isSignUpMode 
+        ? "มีบัญชีอยู่แล้ว? กลับไปหน้าล็อกอิน (Sign In)" 
+        : "ยังไม่มีบัญชี? กดที่นี่เพื่อสมัครสมาชิก (Sign Up)";
+    }
+
+    async function handleAuthAction() {
+      const email = document.getElementById("auth-email").value.trim();
+      const password = document.getElementById("auth-password").value;
+
+      if (!email || !password) return alert("กรุณากรอกอีเมลและรหัสผ่าน");
+
+      if (isSignUpMode) {
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) return alert("สมัครสมาชิกไม่สำเร็จ: " + error.message);
+        showToast("สร้างบัญชีสำเร็จ! กำลังเข้าสู่ระบบ...");
+        if (data.user) onUserAuthenticated(data.user);
+      } else {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) return alert("ล็อกอินไม่สำเร็จ: " + error.message);
+        showToast("ยืนยันตัวตนสำเร็จ");
+        if (data.user) onUserAuthenticated(data.user);
+      }
+    }
+
+    function onUserAuthenticated(user) {
+      currentUser = user;
+      document.getElementById("auth-screen").classList.add("hidden");
+      document.getElementById("lock-screen").classList.remove("hidden");
+      document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-zinc-400 font-mono tracking-wider">${user.email} (LOCKED)</span>`;
+      document.getElementById("master-pass").focus();
+    }
+
+    async function handleSignOut() {
+      await supabaseClient.auth.signOut();
+      lockVault();
+      currentUser = null;
+      document.getElementById("lock-screen").classList.add("hidden");
+      document.getElementById("keep-screen").classList.add("hidden");
+      document.getElementById("auth-screen").classList.remove("hidden");
+      document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">NOT LOGGED IN</span>`;
+      showToast("ออกจากระบบแล้ว", "info");
     }
 
     function resetInactivityTimer() {
@@ -328,7 +424,7 @@
 
     async function unlockVault() {
       const pass = document.getElementById("master-pass").value;
-      if (!pass) return alert("กรุณาใส่รหัสผ่าน");
+      if (!pass) return alert("กรุณาใส่ Master Key");
 
       try {
         currentCryptoKey = await deriveKey(pass);
@@ -336,12 +432,12 @@
 
         document.getElementById("lock-screen").classList.add("hidden");
         document.getElementById("keep-screen").classList.remove("hidden");
-        document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-emerald-400 font-mono">● VAULT ACTIVE</span>`;
+        document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-emerald-400 font-mono">${currentUser.email} (UNLOCKED)</span>`;
         resetInactivityTimer();
         lucide.createIcons();
         showToast("ปลดล็อก VAULT สำเร็จ");
       } catch (err) {
-        alert("รหัสผ่านไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการโหลดข้อมูล");
+        alert("รหัส Master Key ไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการโหลดข้อมูล");
       }
     }
 
@@ -528,7 +624,7 @@
       }
 
       const payload = await encryptData({ title, content: bodyData, color: activeColor, folder: folder });
-      const { data, error } = await supabaseClient.from('notes').insert([{ payload, is_pinned: isPinned, is_deleted: false }]).select().single();
+      const { data, error } = await supabaseClient.from('notes').insert([{ payload, is_pinned: isPinned, is_deleted: false, user_id: currentUser.id }]).select().single();
 
       if (error) return alert("บันทึกไม่สำเร็จ: " + error.message);
 
@@ -741,7 +837,9 @@
       document.getElementById("master-pass").value = "";
       document.getElementById("keep-screen").classList.add("hidden");
       document.getElementById("lock-screen").classList.remove("hidden");
-      document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-zinc-600 font-mono">LOCKED</span>`;
+      if (currentUser) {
+        document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-zinc-400 font-mono tracking-wider">${currentUser.email} (LOCKED)</span>`;
+      }
     }
   </script>
 </body>
