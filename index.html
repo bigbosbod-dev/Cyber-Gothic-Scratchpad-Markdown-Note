@@ -592,7 +592,6 @@
       }
     }
 
-    // เชื่อมต่อกลับมาใช้ตาราง 'study_vault' ที่ถูกต้องตามฐานข้อมูลจริง
     async function syncSaveCategory(category) {
       if (!currentCryptoKey || !currentUser) return;
       try {
@@ -629,8 +628,15 @@
         for (const row of data) {
           try {
             const decrypted = await decryptData(row.payload);
+            
             if (row.category === 'keep_notes') {
-              appData.notes = Array.isArray(decrypted) ? decrypted : (decrypted?.notes || []);
+              if (Array.isArray(decrypted)) {
+                appData.notes = decrypted;
+              } else if (decrypted && Array.isArray(decrypted.notes)) {
+                appData.notes = decrypted.notes;
+              } else {
+                appData.notes = [];
+              }
             }
             if (row.category === 'timetable') appData.timetable = Array.isArray(decrypted) ? decrypted : [];
             if (row.category === 'assignments') appData.assignments = Array.isArray(decrypted) ? decrypted : [];
