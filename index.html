@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>† GOTHIC KEEP // AUTH & VAULT †</title>
+  <title>† GOTHIC // STUDY VAULT †</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Space+Mono:wght@400;700&family=Prompt:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Space+Mono:wght@400;700&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -22,16 +22,22 @@
     .gothic-title { font-family: 'Cinzel', serif; letter-spacing: 0.15em; }
     .sigil-card {
       background: rgba(12, 12, 16, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       box-shadow: 0 4px 25px rgba(0, 0, 0, 0.8);
       transition: all 0.2s ease;
     }
+    .sigil-card:hover { border-color: rgba(255, 255, 255, 0.2); }
     .color-default { border: 1px solid rgba(255, 255, 255, 0.12); }
     .color-crimson { border: 1px solid rgba(244, 63, 94, 0.45); box-shadow: 0 0 15px rgba(244, 63, 94, 0.15); }
     .color-emerald { border: 1px solid rgba(16, 185, 129, 0.45); box-shadow: 0 0 15px rgba(16, 185, 129, 0.15); }
     .color-amber   { border: 1px solid rgba(245, 158, 11, 0.45); box-shadow: 0 0 15px rgba(245, 158, 11, 0.15); }
     .color-violet  { border: 1px solid rgba(139, 92, 246, 0.45); box-shadow: 0 0 15px rgba(139, 92, 246, 0.15); }
 
-    .pinned-badge { box-shadow: inset 0 0 10px rgba(251, 191, 36, 0.2); }
+    .nav-tab.active {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: #ffffff;
+      color: #ffffff;
+    }
     .md-content p { margin-bottom: 0.5rem; }
     .md-content pre {
       background: #020204;
@@ -47,7 +53,6 @@
       font-size: 11px;
       color: #a1a1aa;
     }
-
     #toast-container {
       position: fixed;
       bottom: 24px;
@@ -61,247 +66,392 @@
       opacity: 0;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .toast-msg.show {
-      transform: translateY(0);
-      opacity: 1;
-    }
+    .toast-msg.show { transform: translateY(0); opacity: 1; }
   </style>
 </head>
 <body class="text-zinc-300 min-h-screen py-6 px-4 md:px-8 flex flex-col justify-between" onmousemove="resetInactivityTimer()" onkeydown="resetInactivityTimer()">
 
-  <div class="max-w-5xl mx-auto w-full">
+  <div class="max-w-6xl mx-auto w-full">
     
     <!-- Top Header -->
-    <header class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-zinc-800">
       <div>
-        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ IDENTITY & ENCRYPTION VAULT ✦</span>
+        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ CYBER-GOTHIC ACADEMIA VAULT ✦</span>
         <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase mt-0.5">
-          GOTHIC // KEEP
+          GOTHIC // STUDY & KEEP
         </h1>
       </div>
-      <div id="auth-status" class="text-right">
+      <div id="auth-status" class="text-left md:text-right">
         <span class="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">NOT LOGGED IN</span>
       </div>
     </header>
 
-    <!-- STEP 1: Supabase Email/Password Auth Screen -->
+    <!-- STEP 1: Supabase Auth Screen -->
     <div id="auth-screen" class="sigil-card color-default max-w-md mx-auto p-8 text-center my-12">
       <div class="text-3xl mb-3">🛡️</div>
       <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2" id="auth-box-title">AUTHENTICATE ACCESS</h2>
       <p class="text-xs text-zinc-500 mb-6 font-mono">ลงชื่อเข้าใช้ด้วยบัญชีของคุณเพื่อเชื่อมต่อฐานข้อมูลส่วนตัว</p>
       
       <div class="space-y-3 mb-4">
-        <input 
-          type="email" 
-          id="auth-email" 
-          placeholder="EMAIL ADDRESS" 
-          class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono text-xs"
-        >
-        <input 
-          type="password" 
-          id="auth-password" 
-          placeholder="PASSWORD" 
-          onkeydown="if(event.key==='Enter') handleAuthAction()"
-          class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono text-xs"
-        >
+        <input type="email" id="auth-email" placeholder="EMAIL ADDRESS" class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono text-xs">
+        <input type="password" id="auth-password" placeholder="PASSWORD" onkeydown="if(event.key==='Enter') handleAuthAction()" class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono text-xs">
       </div>
 
-      <button 
-        id="auth-submit-btn"
-        onclick="handleAuthAction()" 
-        class="w-full py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg mb-3"
-      >
+      <button id="auth-submit-btn" onclick="handleAuthAction()" class="w-full py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg mb-3">
         ✦ SIGN IN ✦
       </button>
 
       <div class="text-center">
-        <button 
-          onclick="toggleAuthMode()" 
-          id="auth-toggle-mode-btn"
-          class="text-[11px] text-zinc-500 hover:text-zinc-300 underline font-mono tracking-wider"
-        >
+        <button onclick="toggleAuthMode()" id="auth-toggle-mode-btn" class="text-[11px] text-zinc-500 hover:text-zinc-300 underline font-mono tracking-wider">
           ยังไม่มีบัญชี? กดที่นี่เพื่อสมัครสมาชิก (Sign Up)
         </button>
       </div>
     </div>
 
-    <!-- STEP 2: Master Key Screen (Double Security) -->
+    <!-- STEP 2: Master Key Lock Screen -->
     <div id="lock-screen" class="sigil-card color-default max-w-md mx-auto p-8 text-center my-12 hidden">
       <div class="text-3xl mb-3">🔒</div>
       <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2">ENTER MASTER KEY</h2>
-      <p class="text-xs text-zinc-500 mb-6">กรอก Master Key ของคุณเพื่อถอดรหัสข้อความ AES-256 (ใช้รหัสเดิมทุกอุปกรณ์)</p>
+      <p class="text-xs text-zinc-500 mb-6">กรอก Master Key ของคุณเพื่อถอดรหัสข้อความ AES-256 (ศูนย์กลางความปลอดภัย)</p>
       
-      <input 
-        type="password" 
-        id="master-pass" 
-        placeholder="••••••••••••" 
-        onkeydown="if(event.key==='Enter') unlockVault()"
-        class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono tracking-widest text-sm mb-4"
-      >
+      <input type="password" id="master-pass" placeholder="••••••••••••" onkeydown="if(event.key==='Enter') unlockVault()" class="w-full bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-center text-white outline-none focus:border-zinc-400 font-mono tracking-widest text-sm mb-4">
       <div class="flex gap-2">
-        <button 
-          onclick="handleSignOut()" 
-          class="w-1/3 py-2.5 border border-zinc-800 text-zinc-500 hover:text-white font-mono text-xs uppercase tracking-wider transition-all"
-        >
-          SIGN OUT
-        </button>
-        <button 
-          onclick="unlockVault()" 
-          class="w-2/3 py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg"
-        >
-          ✦ UNLOCK KEEP ✦
-        </button>
+        <button onclick="handleSignOut()" class="w-1/3 py-2.5 border border-zinc-800 text-zinc-500 hover:text-white font-mono text-xs uppercase tracking-wider transition-all">SIGN OUT</button>
+        <button onclick="unlockVault()" class="w-2/3 py-2.5 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg">✦ UNLOCK VAULT ✦</button>
       </div>
     </div>
 
-    <!-- STEP 3: Keep Workspace -->
-    <div id="keep-screen" class="hidden space-y-6">
+    <!-- STEP 3: Main Dashboard -->
+    <div id="main-workspace" class="hidden space-y-6">
       
-      <!-- Top Bar: Search & Status -->
-      <div class="flex items-center justify-between gap-3">
-        <div class="relative flex-1 max-w-md">
-          <i data-lucide="search" class="w-4 h-4 text-zinc-500 absolute left-3 top-2.5"></i>
-          <input 
-            type="text" 
-            id="search-input" 
-            placeholder="ค้นหาบันทึกหรือรายการ..." 
-            oninput="renderNotes()"
-            class="w-full bg-zinc-900/80 border border-zinc-800 pl-9 pr-4 py-2 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-zinc-500 font-mono"
-          >
+      <!-- Navigation Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-zinc-800/80">
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="switchTab('keep')" id="tab-btn-keep" class="nav-tab active px-3.5 py-1.5 border border-zinc-800 text-xs font-mono tracking-wider uppercase flex items-center gap-1.5 transition-all">
+            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> KEEP NOTES
+          </button>
+          <button onclick="switchTab('schedule')" id="tab-btn-schedule" class="nav-tab px-3.5 py-1.5 border border-zinc-800 text-xs font-mono tracking-wider uppercase flex items-center gap-1.5 transition-all">
+            <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TIMETABLE
+          </button>
+          <button onclick="switchTab('kanban')" id="tab-btn-kanban" class="nav-tab px-3.5 py-1.5 border border-zinc-800 text-xs font-mono tracking-wider uppercase flex items-center gap-1.5 transition-all">
+            <i data-lucide="trello" class="w-3.5 h-3.5"></i> ASSIGNMENTS
+          </button>
+          <button onclick="switchTab('pomodoro')" id="tab-btn-pomodoro" class="nav-tab px-3.5 py-1.5 border border-zinc-800 text-xs font-mono tracking-wider uppercase flex items-center gap-1.5 transition-all">
+            <i data-lucide="hourglass" class="w-3.5 h-3.5"></i> POMODORO
+          </button>
+          <button onclick="switchTab('gpa')" id="tab-btn-gpa" class="nav-tab px-3.5 py-1.5 border border-zinc-800 text-xs font-mono tracking-wider uppercase flex items-center gap-1.5 transition-all">
+            <i data-lucide="calculator" class="w-3.5 h-3.5"></i> GPA SIMULATOR
+          </button>
         </div>
+
         <div class="flex items-center gap-2">
-          <span id="timer-display" class="text-[10px] text-zinc-600 font-mono hidden md:inline">AUTO-LOCK IN 5M</span>
-          <button onclick="lockVault()" title="Lock Screen" class="px-3 py-1.5 border border-zinc-800 hover:border-amber-500 text-zinc-500 hover:text-amber-400 text-xs uppercase tracking-wider transition-all flex items-center gap-1">
-            <i data-lucide="lock" class="w-3.5 h-3.5"></i> LOCK
+          <button onclick="lockVault()" title="Lock Screen" class="px-2.5 py-1.5 border border-zinc-800 hover:border-amber-500 text-zinc-500 hover:text-amber-400 text-xs font-mono uppercase flex items-center gap-1">
+            <i data-lucide="lock" class="w-3 h-3"></i> LOCK
           </button>
-          <button onclick="handleSignOut()" title="Sign Out" class="px-3 py-1.5 border border-zinc-800 hover:border-red-500 text-zinc-500 hover:text-red-400 text-xs uppercase tracking-wider transition-all flex items-center gap-1">
-            <i data-lucide="log-out" class="w-3.5 h-3.5"></i> LOGOUT
+          <button onclick="handleSignOut()" title="Sign Out" class="px-2.5 py-1.5 border border-zinc-800 hover:border-rose-500 text-zinc-500 hover:text-rose-400 text-xs font-mono uppercase flex items-center gap-1">
+            <i data-lucide="log-out" class="w-3 h-3"></i> LOGOUT
           </button>
         </div>
       </div>
 
-      <!-- Dynamic Folder Filter Bar -->
-      <div class="flex items-center justify-between gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
-        <div class="flex items-center gap-2 flex-wrap" id="folder-bar"></div>
-        <button onclick="setFilterFolder('TRASH')" id="trash-pill" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-rose-950/80 hover:border-rose-700 text-rose-400 font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all whitespace-nowrap">
-          <i data-lucide="trash" class="w-3.5 h-3.5"></i> TRASH (<span id="trash-count">0</span>)
-        </button>
-      </div>
-
-      <!-- Create Box -->
-      <div class="sigil-card color-default max-w-xl mx-auto p-4 relative" id="create-box">
-        <input 
-          type="text" 
-          id="new-title" 
-          placeholder="หัวข้อบันทึก..." 
-          class="w-full bg-transparent text-white font-bold text-sm pb-2 mb-2 border-b border-zinc-800 outline-none placeholder:text-zinc-600 font-mono hidden"
-        >
-
-        <div id="note-input-container">
-          <textarea 
-            id="new-body" 
-            rows="1" 
-            placeholder="จดบันทึก หรือสร้าง To-Do List... (รองรับ Markdown)" 
-            onfocus="expandCreateBox()"
-            class="w-full bg-transparent text-zinc-200 text-xs leading-relaxed placeholder:text-zinc-500 outline-none resize-none font-mono"
-          ></textarea>
+      <!-- ================= TAB 1: KEEP NOTES ================= -->
+      <section id="tab-keep" class="tab-content space-y-6">
+        <div class="flex items-center justify-between gap-3">
+          <div class="relative flex-1 max-w-md">
+            <i data-lucide="search" class="w-4 h-4 text-zinc-500 absolute left-3 top-2.5"></i>
+            <input type="text" id="note-search" placeholder="ค้นหาบันทึกหรือรายการ..." oninput="renderNotes()" class="w-full bg-zinc-900/80 border border-zinc-800 pl-9 pr-4 py-2 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-zinc-500 font-mono">
+          </div>
+          <div class="flex items-center gap-2 flex-wrap" id="folder-pills"></div>
         </div>
 
-        <div id="checklist-input-container" class="hidden space-y-2 mb-3">
-          <div id="todo-items-builder" class="space-y-1.5"></div>
-          <button onclick="addChecklistRow()" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 mt-2">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มรายการ
-          </button>
-        </div>
+        <!-- Create Box -->
+        <div class="sigil-card color-default max-w-xl mx-auto p-4 relative" id="create-box">
+          <input type="text" id="new-title" placeholder="หัวข้อบันทึก..." class="w-full bg-transparent text-white font-bold text-sm pb-2 mb-2 border-b border-zinc-800 outline-none placeholder:text-zinc-600 font-mono hidden">
 
-        <div id="create-actions" class="hidden flex flex-wrap items-center justify-between gap-3 pt-3 mt-2 border-t border-zinc-800/60">
-          <div class="flex flex-wrap items-center gap-3">
-            <button onclick="toggleNoteType()" id="type-toggle-btn" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1 border border-zinc-800 px-2 py-1">
-              <i data-lucide="check-square" class="w-3.5 h-3.5"></i> <span id="toggle-label">TO-DO</span>
+          <div id="note-input-container">
+            <textarea id="new-body" rows="1" placeholder="จดบันทึก หรือสร้าง To-Do List... (รองรับ Markdown)" onfocus="expandCreateBox()" class="w-full bg-transparent text-zinc-200 text-xs leading-relaxed placeholder:text-zinc-500 outline-none resize-none font-mono"></textarea>
+          </div>
+
+          <div id="checklist-input-container" class="hidden space-y-2 mb-3">
+            <div id="todo-items-builder" class="space-y-1.5"></div>
+            <button onclick="addChecklistRow()" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 mt-2">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มรายการ
             </button>
-            
-            <select id="new-folder" onchange="handleFolderSelectChange(this)" class="bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 py-1 px-2 outline-none font-mono">
-            </select>
+          </div>
 
-            <div class="flex items-center gap-1.5">
-              <button onclick="selectColor('default')" class="w-3.5 h-3.5 rounded-full bg-zinc-700 hover:scale-110 transition-transform"></button>
-              <button onclick="selectColor('crimson')" class="w-3.5 h-3.5 rounded-full bg-rose-500 hover:scale-110 transition-transform"></button>
-              <button onclick="selectColor('emerald')" class="w-3.5 h-3.5 rounded-full bg-emerald-500 hover:scale-110 transition-transform"></button>
-              <button onclick="selectColor('amber')" class="w-3.5 h-3.5 rounded-full bg-amber-500 hover:scale-110 transition-transform"></button>
-              <button onclick="selectColor('violet')" class="w-3.5 h-3.5 rounded-full bg-violet-500 hover:scale-110 transition-transform"></button>
+          <div id="create-actions" class="hidden flex flex-wrap items-center justify-between gap-3 pt-3 mt-2 border-t border-zinc-800/60">
+            <div class="flex flex-wrap items-center gap-3">
+              <button onclick="toggleNoteType()" id="type-toggle-btn" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1 border border-zinc-800 px-2 py-1">
+                <i data-lucide="check-square" class="w-3.5 h-3.5"></i> <span id="toggle-label">TO-DO</span>
+              </button>
+              <select id="new-folder" onchange="handleFolderSelectChange(this)" class="bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 py-1 px-2 outline-none font-mono"></select>
+              <div class="flex items-center gap-1.5">
+                <button onclick="selectColor('default')" class="w-3.5 h-3.5 rounded-full bg-zinc-700 hover:scale-110 transition-transform"></button>
+                <button onclick="selectColor('crimson')" class="w-3.5 h-3.5 rounded-full bg-rose-500 hover:scale-110 transition-transform"></button>
+                <button onclick="selectColor('emerald')" class="w-3.5 h-3.5 rounded-full bg-emerald-500 hover:scale-110 transition-transform"></button>
+                <button onclick="selectColor('amber')" class="w-3.5 h-3.5 rounded-full bg-amber-500 hover:scale-110 transition-transform"></button>
+                <button onclick="selectColor('violet')" class="w-3.5 h-3.5 rounded-full bg-violet-500 hover:scale-110 transition-transform"></button>
+              </div>
+              <label class="flex items-center gap-1 text-[11px] text-zinc-500 cursor-pointer">
+                <input type="checkbox" id="new-pin" class="accent-amber-400"> ปักหมุด
+              </label>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="collapseCreateBox()" class="text-[11px] text-zinc-500 hover:text-white px-2 py-1 uppercase">ยกเลิก</button>
+              <button onclick="createNote()" class="text-[11px] bg-white text-black font-bold px-4 py-1 uppercase hover:bg-zinc-200 transition-all">บันทึก</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="pinned-section" class="hidden">
+          <h3 class="text-[10px] text-amber-400/80 tracking-[0.2em] uppercase font-mono mb-3 flex items-center gap-1.5">
+            <i data-lucide="pin" class="w-3 h-3"></i> PINNED NOTES
+          </h3>
+          <div id="pinned-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+
+        <div>
+          <h3 id="others-label" class="text-[10px] text-zinc-500 tracking-[0.2em] uppercase font-mono mb-3 flex items-center gap-1.5">
+            ALL NOTES
+          </h3>
+          <div id="notes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: TIMETABLE ================= -->
+      <section id="tab-schedule" class="tab-content hidden space-y-6">
+        <!-- Next Class Indicator -->
+        <div id="next-class-card" class="sigil-card color-emerald p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <span class="text-[10px] text-emerald-400 font-mono tracking-widest uppercase block">✦ UPCOMING / CURRENT CLASS ✦</span>
+            <h3 id="next-class-title" class="text-base font-bold text-white mt-0.5">ไม่มีคาบเรียนในขณะนี้</h3>
+            <p id="next-class-detail" class="text-xs text-zinc-400 font-mono mt-1">พักผ่อน หรือเตรียมตัวอ่านหนังสือ</p>
+          </div>
+          <div id="next-class-badge" class="px-3 py-1 bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 text-xs font-mono">
+            FREE TIME
+          </div>
+        </div>
+
+        <!-- Add Class Form -->
+        <div class="sigil-card color-default p-4">
+          <h4 class="text-xs font-bold text-zinc-300 font-mono uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-zinc-400"></i> เพิ่มรายวิชาในตารางเรียน
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            <input type="text" id="class-code" placeholder="รหัสวิชา (เช่น CS204)" class="bg-zinc-900 border border-zinc-800 px-3 py-2 text-xs text-white outline-none focus:border-zinc-500 font-mono">
+            <input type="text" id="class-name" placeholder="ชื่อวิชา" class="bg-zinc-900 border border-zinc-800 px-3 py-2 text-xs text-white outline-none focus:border-zinc-500 font-mono">
+            <select id="class-day" class="bg-zinc-900 border border-zinc-800 px-3 py-2 text-xs text-zinc-300 outline-none font-mono">
+              <option value="MON">วันจันทร์ (Mon)</option>
+              <option value="TUE">วันอังคาร (Tue)</option>
+              <option value="WED">วันพุธ (Wed)</option>
+              <option value="THU">วันพฤหัสบดี (Thu)</option>
+              <option value="FRI">วันศุกร์ (Fri)</option>
+              <option value="SAT">วันเสาร์ (Sat)</option>
+              <option value="SUN">วันอาทิตย์ (Sun)</option>
+            </select>
+            <div class="flex items-center gap-1">
+              <input type="time" id="class-start" class="w-full bg-zinc-900 border border-zinc-800 px-2 py-2 text-xs text-white outline-none font-mono">
+              <span class="text-zinc-600 text-xs">-</span>
+              <input type="time" id="class-end" class="w-full bg-zinc-900 border border-zinc-800 px-2 py-2 text-xs text-white outline-none font-mono">
+            </div>
+            <input type="text" id="class-room" placeholder="ห้องเรียน / อาคาร" class="bg-zinc-900 border border-zinc-800 px-3 py-2 text-xs text-white outline-none focus:border-zinc-500 font-mono">
+            <button onclick="addClassSchedule()" class="bg-white hover:bg-zinc-200 text-black font-bold text-xs uppercase px-4 py-2 transition-all font-mono">
+              + บันทึกคาบ
+            </button>
+          </div>
+        </div>
+
+        <!-- Timetable View By Day -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4" id="timetable-matrix"></div>
+      </section>
+
+      <!-- ================= TAB 3: ASSIGNMENTS KANBAN ================= -->
+      <section id="tab-kanban" class="tab-content hidden space-y-6">
+        <!-- New Task Form -->
+        <div class="sigil-card color-default p-4 flex flex-col md:flex-row gap-3 items-end">
+          <div class="flex-1 w-full space-y-1">
+            <label class="text-[10px] text-zinc-500 font-mono uppercase">ชื่องาน / รายละเอียดโปรเจกต์</label>
+            <input type="text" id="kanban-title" placeholder="เช่น การบ้าน Lab 4, ส่งรายงานบทที่ 1..." class="w-full bg-zinc-900 border border-zinc-800 px-3 py-2 text-xs text-white outline-none font-mono">
+          </div>
+          <div class="w-full md:w-48 space-y-1">
+            <label class="text-[10px] text-zinc-500 font-mono uppercase">วิชา</label>
+            <input type="text" id="kanban-subject" placeholder="เช่น OS, Networks" class="w-full bg-zinc-900 border border-zinc-800 px-3 py-2 text-xs text-white outline-none font-mono">
+          </div>
+          <div class="w-full md:w-40 space-y-1">
+            <label class="text-[10px] text-zinc-500 font-mono uppercase">กำหนดส่ง (Deadline)</label>
+            <input type="date" id="kanban-deadline" class="w-full bg-zinc-900 border border-zinc-800 px-3 py-2 text-xs text-white outline-none font-mono">
+          </div>
+          <button onclick="createKanbanTask()" class="w-full md:w-auto bg-white hover:bg-zinc-200 text-black font-bold text-xs uppercase px-5 py-2.5 transition-all font-mono whitespace-nowrap">
+            + เพิ่มงาน
+          </button>
+        </div>
+
+        <!-- Kanban Columns -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- TO DO -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-zinc-800 text-zinc-400 font-mono text-xs uppercase">
+              <span>TO DO</span>
+              <span id="count-todo" class="text-[10px] px-2 py-0.5 bg-zinc-900 border border-zinc-800">0</span>
+            </div>
+            <div id="col-todo" class="space-y-3 min-h-[300px]"></div>
+          </div>
+          <!-- IN PROGRESS -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-amber-900/60 text-amber-400 font-mono text-xs uppercase">
+              <span>DOING</span>
+              <span id="count-doing" class="text-[10px] px-2 py-0.5 bg-zinc-900 border border-amber-900/80">0</span>
+            </div>
+            <div id="col-doing" class="space-y-3 min-h-[300px]"></div>
+          </div>
+          <!-- REVIEW -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-violet-900/60 text-violet-400 font-mono text-xs uppercase">
+              <span>REVIEW</span>
+              <span id="count-review" class="text-[10px] px-2 py-0.5 bg-zinc-900 border border-violet-900/80">0</span>
+            </div>
+            <div id="col-review" class="space-y-3 min-h-[300px]"></div>
+          </div>
+          <!-- DONE -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-emerald-900/60 text-emerald-400 font-mono text-xs uppercase">
+              <span>DONE</span>
+              <span id="count-done" class="text-[10px] px-2 py-0.5 bg-zinc-900 border border-emerald-900/80">0</span>
+            </div>
+            <div id="col-done" class="space-y-3 min-h-[300px]"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: POMODORO CHAMBER ================= -->
+      <section id="tab-pomodoro" class="tab-content hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Timer Display -->
+          <div class="sigil-card color-crimson p-8 flex flex-col items-center justify-center text-center lg:col-span-2">
+            <span id="pomo-mode-badge" class="text-[11px] px-3 py-1 bg-rose-950/60 border border-rose-500/50 text-rose-300 font-mono uppercase tracking-widest mb-4">
+              FOCUS SESSION
+            </span>
+
+            <div id="pomo-timer" class="gothic-title text-6xl md:text-8xl font-black text-white tracking-widest my-4">
+              25:00
             </div>
 
-            <label class="flex items-center gap-1 text-[11px] text-zinc-500 cursor-pointer">
-              <input type="checkbox" id="new-pin" class="accent-amber-400"> ปักหมุด
-            </label>
+            <div class="w-full max-w-xs mb-6">
+              <label class="text-[10px] text-zinc-500 font-mono uppercase block mb-1">กำลังโฟกัสวิชาอะไร:</label>
+              <input type="text" id="pomo-subject-input" value="ทั่วไป" placeholder="เช่น Computer Architecture" class="w-full bg-zinc-900 border border-zinc-800 text-center px-3 py-2 text-xs text-white outline-none font-mono">
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button onclick="togglePomodoro()" id="pomo-start-btn" class="px-8 py-2.5 bg-white hover:bg-zinc-200 text-black font-bold text-xs uppercase tracking-widest transition-all">
+                START
+              </button>
+              <button onclick="resetPomodoro()" class="px-4 py-2.5 border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white text-xs uppercase font-mono">
+                RESET
+              </button>
+              <button onclick="switchPomoMode('break')" class="px-3 py-2.5 border border-zinc-800 hover:border-emerald-600 text-emerald-400 text-xs font-mono">
+                SHORT BREAK (5M)
+              </button>
+            </div>
           </div>
 
-          <div class="flex gap-2">
-            <button onclick="collapseCreateBox()" class="text-[11px] text-zinc-500 hover:text-white px-2 py-1 uppercase">ยกเลิก</button>
-            <button onclick="createNote()" class="text-[11px] bg-white text-black font-bold px-4 py-1 uppercase hover:bg-zinc-200 transition-all">บันทึก</button>
+          <!-- Subject Focus Stats -->
+          <div class="sigil-card color-default p-5 space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <h4 class="text-xs font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-zinc-400"></i> STUDY TIME LOG
+              </h4>
+              <span id="total-focus-minutes" class="text-xs text-zinc-400 font-mono">0 นาที</span>
+            </div>
+            <div id="pomo-stats-list" class="space-y-2 text-xs font-mono max-h-72 overflow-y-auto">
+              <div class="text-zinc-600 text-center py-6">ยังไม่มีบันทึกเวลาเรียน</div>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div id="trash-banner" class="hidden sigil-card p-3 border border-rose-900/60 bg-rose-950/20 text-rose-300 text-xs text-center font-mono">
-        🗑️ บันทึกในถังขยะจะถูกทำลายถาวรอัตโนมัติหลังจากผ่านไป 30 วัน
-      </div>
+      <!-- ================= TAB 5: GPA SIMULATOR ================= -->
+      <section id="tab-gpa" class="tab-content hidden space-y-6">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="sigil-card color-amber p-4">
+            <span class="text-[10px] text-amber-400/80 font-mono uppercase tracking-wider block">TARGET GPAX</span>
+            <div class="flex items-baseline gap-2 mt-1">
+              <input type="number" step="0.01" id="target-gpax" value="3.50" onchange="calculateGpa()" class="bg-transparent text-2xl font-bold text-white w-24 outline-none border-b border-amber-500 font-mono">
+              <span class="text-xs text-zinc-500 font-mono">เป้าหมาย</span>
+            </div>
+          </div>
+          <div class="sigil-card color-default p-4">
+            <span class="text-[10px] text-zinc-500 font-mono uppercase tracking-wider block">ACCUMULATED CREDITS</span>
+            <div class="flex items-baseline gap-2 mt-1">
+              <input type="number" step="1" id="accum-credits" value="60" onchange="calculateGpa()" class="bg-transparent text-2xl font-bold text-white w-24 outline-none border-b border-zinc-700 font-mono">
+              <span class="text-xs text-zinc-500 font-mono">หน่วยกิตสะสมเดิม</span>
+            </div>
+          </div>
+          <div class="sigil-card color-default p-4">
+            <span class="text-[10px] text-zinc-500 font-mono uppercase tracking-wider block">CURRENT GPAX</span>
+            <div class="flex items-baseline gap-2 mt-1">
+              <input type="number" step="0.01" id="current-gpax" value="3.20" onchange="calculateGpa()" class="bg-transparent text-2xl font-bold text-white w-24 outline-none border-b border-zinc-700 font-mono">
+              <span class="text-xs text-zinc-500 font-mono">เกรดเฉลี่ยเดิม</span>
+            </div>
+          </div>
+        </div>
 
-      <div id="pinned-section" class="hidden">
-        <h3 class="text-[10px] text-amber-400/80 tracking-[0.2em] uppercase font-mono mb-3 flex items-center gap-1.5">
-          <i data-lucide="pin" class="w-3 h-3"></i> PINNED NOTES
-        </h3>
-        <div id="pinned-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-      </div>
+        <!-- Simulation Result Box -->
+        <div id="gpa-simulator-result" class="sigil-card color-violet p-5 font-mono text-xs leading-relaxed">
+          กำลังคำนวณการจำลองเกรด...
+        </div>
 
-      <div>
-        <h3 id="others-label" class="text-[10px] text-zinc-500 tracking-[0.2em] uppercase font-mono mb-3 flex items-center gap-1.5">
-          ALL NOTES
-        </h3>
-        <div id="notes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-      </div>
+        <!-- Current Semester Course Planner -->
+        <div class="sigil-card color-default p-5 space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
+            <h4 class="text-xs font-bold text-white font-mono uppercase tracking-wider">
+              รายวิชาที่ลงทะเบียนในเทอมนี้
+            </h4>
+            <button onclick="addGpaCourseRow()" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มวิชา
+            </button>
+          </div>
+
+          <div id="gpa-courses-table" class="space-y-2"></div>
+        </div>
+      </section>
 
     </div>
 
   </div>
 
-  <!-- Delete Modal -->
-  <div id="delete-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="sigil-card color-crimson max-w-sm w-full p-6 text-center">
-      <div class="text-3xl mb-2 text-rose-500">⚠️</div>
-      <h3 class="text-sm font-bold uppercase tracking-widest text-white mb-2" id="modal-title">MOVE TO TRASH</h3>
-      <p class="text-xs text-zinc-400 mb-6 font-mono leading-relaxed" id="modal-desc">ต้องการย้ายบันทึกนี้ไปถังขยะใช่หรือไม่? (สามารถกู้คืนได้ภายใน 30 วัน)</p>
-      
-      <div class="flex gap-3 justify-center">
-        <button onclick="closeDeleteModal()" class="flex-1 py-2 border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white text-xs uppercase tracking-wider transition-all">
-          ยกเลิก
-        </button>
-        <button onclick="confirmDeleteNote()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider transition-all">
-          ยืนยัน
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notifications -->
   <div id="toast-container"></div>
 
   <script>
+    // Config Supabase
     const SUPABASE_URL = "https://ljotkgjiudazeutfxvei.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_i6aEENM6sSGPsXDJB0Cpvg_ThUWPG7w";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentUser = null;
     let currentCryptoKey = null;
-    let localNotes = [];
-    let customFolders = ['GENERAL'];
-    let isChecklistMode = false;
-    let activeColor = 'default';
-    let activeFolderFilter = 'ALL';
     let inactivityTimer = null;
-    let noteIdToDelete = null;
-    let isPermanentDelete = false;
     let isSignUpMode = false;
+
+    // Local State
+    let appData = {
+      notes: [],
+      timetable: [],
+      assignments: [],
+      pomo_stats: {},
+      gpa: { target: 3.50, accumCredits: 60, currentGpax: 3.20, courses: [] }
+    };
+
+    let activeColor = 'default';
+    let isChecklistMode = false;
+    let activeFilterFolder = 'ALL';
+
+    // Pomodoro Timer State
+    let pomoMinutes = 25;
+    let pomoSeconds = 0;
+    let pomoInterval = null;
+    let isPomoRunning = false;
+    let isBreakMode = false;
 
     window.addEventListener('DOMContentLoaded', async () => {
       lucide.createIcons();
@@ -316,13 +466,8 @@
       const toast = document.createElement("div");
       let borderClass = 'border-emerald-500/50 text-emerald-300';
       let icon = '✦';
-      if (type === 'error') {
-        borderClass = 'border-rose-500/50 text-rose-300';
-        icon = '✕';
-      } else if (type === 'info') {
-        borderClass = 'border-zinc-500/50 text-zinc-300';
-        icon = 'ℹ';
-      }
+      if (type === 'error') { borderClass = 'border-rose-500/50 text-rose-300'; icon = '✕'; }
+      else if (type === 'info') { borderClass = 'border-zinc-500/50 text-zinc-300'; icon = 'ℹ'; }
 
       toast.className = `toast-msg sigil-card ${borderClass} px-4 py-2.5 rounded border bg-zinc-950/95 shadow-2xl flex items-center gap-2 text-xs font-mono mb-2`;
       toast.innerHTML = `<span class="font-bold">${icon}</span> <span>${message}</span>`;
@@ -338,15 +483,12 @@
       isSignUpMode = !isSignUpMode;
       document.getElementById("auth-box-title").innerText = isSignUpMode ? "REGISTER NEW ACCOUNT" : "AUTHENTICATE ACCESS";
       document.getElementById("auth-submit-btn").innerText = isSignUpMode ? "✦ SIGN UP ✦" : "✦ SIGN IN ✦";
-      document.getElementById("auth-toggle-mode-btn").innerText = isSignUpMode 
-        ? "มีบัญชีอยู่แล้ว? กลับไปหน้าล็อกอิน (Sign In)" 
-        : "ยังไม่มีบัญชี? กดที่นี่เพื่อสมัครสมาชิก (Sign Up)";
+      document.getElementById("auth-toggle-mode-btn").innerText = isSignUpMode ? "มีบัญชีอยู่แล้ว? กลับไปหน้าล็อกอิน (Sign In)" : "ยังไม่มีบัญชี? กดที่นี่เพื่อสมัครสมาชิก (Sign Up)";
     }
 
     async function handleAuthAction() {
       const email = document.getElementById("auth-email").value.trim();
       const password = document.getElementById("auth-password").value;
-
       if (!email || !password) return alert("กรุณากรอกอีเมลและรหัสผ่าน");
 
       if (isSignUpMode) {
@@ -375,25 +517,24 @@
       lockVault();
       currentUser = null;
       document.getElementById("lock-screen").classList.add("hidden");
-      document.getElementById("keep-screen").classList.add("hidden");
+      document.getElementById("main-workspace").classList.add("hidden");
       document.getElementById("auth-screen").classList.remove("hidden");
       document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">NOT LOGGED IN</span>`;
-      showToast("ออกจากระบบแล้ว", "info");
+      showToast("ออกจากระบบเรียบร้อย", "info");
     }
 
     function resetInactivityTimer() {
       if (!currentCryptoKey) return;
       clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => {
-        lockVault();
-      }, 5 * 60 * 1000);
+      inactivityTimer = setTimeout(() => lockVault(), 10 * 60 * 1000);
     }
 
+    // AES-GCM 256-bit Encryption Helpers
     async function deriveKey(passphrase) {
       const enc = new TextEncoder();
       const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(passphrase), { name: "PBKDF2" }, false, ["deriveKey"]);
       return crypto.subtle.deriveKey(
-        { name: "PBKDF2", salt: enc.encode("cyber_gothic_keep_salt"), iterations: 100000, hash: "SHA-256" },
+        { name: "PBKDF2", salt: enc.encode("cyber_gothic_study_salt"), iterations: 100000, hash: "SHA-256" },
         keyMaterial,
         { name: "AES-GCM", length: 256 },
         false,
@@ -428,147 +569,98 @@
 
       try {
         currentCryptoKey = await deriveKey(pass);
-        await fetchNotes();
+        await syncLoadAllData();
 
         document.getElementById("lock-screen").classList.add("hidden");
-        document.getElementById("keep-screen").classList.remove("hidden");
+        document.getElementById("main-workspace").classList.remove("hidden");
         document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-emerald-400 font-mono">${currentUser.email} (UNLOCKED)</span>`;
         resetInactivityTimer();
+        
+        // Initial Render
+        renderNotes();
+        renderTimetable();
+        renderKanban();
+        renderPomodoroStats();
+        renderGpaCourses();
+        calculateGpa();
+        checkUpcomingClass();
         lucide.createIcons();
-        showToast("ปลดล็อก VAULT สำเร็จ");
+        showToast("ปลดล็อก STUDY VAULT สำเร็จ ✦");
       } catch (err) {
+        console.error(err);
         alert("รหัส Master Key ไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการโหลดข้อมูล");
       }
     }
 
-    async function fetchNotes() {
-      const { data, error } = await supabaseClient.from('notes').select('*').order('updated_at', { ascending: false });
+    function lockVault() {
+      currentCryptoKey = null;
+      appData = { notes: [], timetable: [], assignments: [], pomo_stats: {}, gpa: { target: 3.5, accumCredits: 60, currentGpax: 3.2, courses: [] } };
+      clearTimeout(inactivityTimer);
+      if (pomoInterval) clearInterval(pomoInterval);
+      document.getElementById("master-pass").value = "";
+      document.getElementById("main-workspace").classList.add("hidden");
+      document.getElementById("lock-screen").classList.remove("hidden");
+      if (currentUser) {
+        document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-zinc-400 font-mono tracking-wider">${currentUser.email} (LOCKED)</span>`;
+      }
+    }
+
+    // Sync save to Supabase
+    async function syncSaveCategory(category) {
+      if (!currentCryptoKey) return;
+      const dataToSave = appData[category];
+      const encrypted = await encryptData(dataToSave);
+      
+      const { data: existing } = await supabaseClient
+        .from('study_vault')
+        .select('id')
+        .eq('category', category)
+        .maybeSingle();
+
+      if (existing) {
+        await supabaseClient.from('study_vault').update({ payload: encrypted, updated_at: new Date().toISOString() }).eq('id', existing.id);
+      } else {
+        await supabaseClient.from('study_vault').insert([{ category, payload: encrypted, user_id: currentUser.id }]);
+      }
+    }
+
+    async function syncLoadAllData() {
+      const { data, error } = await supabaseClient.from('study_vault').select('*');
       if (error) throw error;
 
-      localNotes = [];
-      const foldersSet = new Set(['GENERAL']);
-      const now = new Date();
-      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-
       for (const row of data || []) {
-        if (row.is_deleted && row.deleted_at) {
-          const deletedTime = new Date(row.deleted_at);
-          if (now - deletedTime > thirtyDaysMs) {
-            supabaseClient.from('notes').delete().eq('id', row.id);
-            continue;
-          }
-        }
-
         try {
-          const content = await decryptData(row.payload);
-          const folder = (content.folder || 'GENERAL').toUpperCase();
-          foldersSet.add(folder);
-
-          localNotes.push({ 
-            id: row.id, 
-            is_pinned: row.is_pinned, 
-            is_deleted: !!row.is_deleted,
-            deleted_at: row.deleted_at,
-            updated_at: row.updated_at, 
-            ...content,
-            folder: folder
-          });
+          const decrypted = await decryptData(row.payload);
+          if (row.category === 'keep_notes') appData.notes = decrypted;
+          if (row.category === 'timetable') appData.timetable = decrypted;
+          if (row.category === 'assignments') appData.assignments = decrypted;
+          if (row.category === 'pomodoro_stats') appData.pomo_stats = decrypted;
+          if (row.category === 'gpa_profile') appData.gpa = decrypted;
         } catch (e) {
-          console.warn("Skip invalid note", row.id);
+          console.warn("Decrypt error for category:", row.category);
         }
       }
-
-      customFolders = Array.from(foldersSet);
-      updateFolderUI();
-      updateTrashCount();
-      renderNotes();
     }
 
-    function updateFolderUI() {
-      const folderBar = document.getElementById("folder-bar");
-      const folderSelect = document.getElementById("new-folder");
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
 
-      let pillsHtml = `<button onclick="setFilterFolder('ALL')" class="folder-pill px-3 py-1 ${activeFolderFilter === 'ALL' ? 'bg-zinc-800 text-white border border-zinc-600' : 'bg-zinc-900/60 border border-zinc-800 text-zinc-400'} font-mono uppercase tracking-wider transition-all">#ALL</button>`;
-
-      customFolders.forEach(f => {
-        const isActive = activeFolderFilter === f;
-        pillsHtml += `<button onclick="setFilterFolder('${f}')" class="folder-pill px-3 py-1 ${isActive ? 'bg-zinc-800 text-white border border-zinc-600' : 'bg-zinc-900/60 border border-zinc-800 text-zinc-400'} font-mono uppercase tracking-wider transition-all">#${f}</button>`;
-      });
-
-      pillsHtml += `<button onclick="promptCreateFolder()" class="px-2 py-1 border border-dashed border-zinc-700 hover:border-zinc-400 text-zinc-500 hover:text-white font-mono text-[11px] uppercase transition-all flex items-center gap-1">+ NEW FOLDER</button>`;
-      folderBar.innerHTML = pillsHtml;
-
-      let optionsHtml = '';
-      customFolders.forEach(f => {
-        optionsHtml += `<option value="${f}">FOLDER: ${f}</option>`;
-      });
-      optionsHtml += `<option value="__NEW__">+ สร้างโฟลเดอร์ใหม่...</option>`;
-      folderSelect.innerHTML = optionsHtml;
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      document.getElementById(`tab-btn-${tabId}`).classList.add('active');
+      lucide.createIcons();
     }
 
-    function promptCreateFolder() {
-      const name = prompt("ตั้งชื่อโฟลเดอร์ใหม่ (เช่น WORK, PROJECT, SECRETS):");
-      if (!name) return;
-      const cleanName = name.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-      if (!cleanName) return alert("ชื่อโฟลเดอร์ไม่ถูกต้อง");
-
-      if (!customFolders.includes(cleanName)) {
-        customFolders.push(cleanName);
-        updateFolderUI();
-        showToast(`สร้างโฟลเดอร์ #${cleanName} สำเร็จ`);
-      }
-      setFilterFolder(cleanName);
-    }
-
-    function handleFolderSelectChange(select) {
-      if (select.value === '__NEW__') {
-        const name = prompt("ตั้งชื่อโฟลเดอร์ใหม่:");
-        if (name) {
-          const cleanName = name.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-          if (cleanName && !customFolders.includes(cleanName)) {
-            customFolders.push(cleanName);
-            updateFolderUI();
-            select.value = cleanName;
-            showToast(`สร้างโฟลเดอร์ #${cleanName} สำเร็จ`);
-            return;
-          }
-        }
-        select.value = 'GENERAL';
-      }
-    }
-
-    function updateTrashCount() {
-      const count = localNotes.filter(n => n.is_deleted).length;
-      document.getElementById("trash-count").innerText = count;
-    }
-
-    function setFilterFolder(folder) {
-      activeFolderFilter = folder;
-      updateFolderUI();
-
-      const trashPill = document.getElementById("trash-pill");
-      if (folder === 'TRASH') {
-        trashPill.className = "folder-pill px-3 py-1 bg-rose-950/60 border border-rose-600 text-rose-300 font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all whitespace-nowrap";
-      } else {
-        trashPill.className = "folder-pill px-3 py-1 bg-zinc-900/60 border border-rose-950/80 hover:border-rose-700 text-rose-400 font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all whitespace-nowrap";
-      }
-
-      document.getElementById("create-box").classList.toggle("hidden", folder === 'TRASH');
-      document.getElementById("trash-banner").classList.toggle("hidden", folder !== 'TRASH');
-
-      renderNotes();
-    }
-
+    // ================= 1. KEEP NOTES SYSTEM =================
     function selectColor(color) {
       activeColor = color;
-      const box = document.getElementById("create-box");
-      box.className = `sigil-card color-${color} max-w-xl mx-auto p-4 relative`;
+      document.getElementById("create-box").className = `sigil-card color-${color} max-w-xl mx-auto p-4 relative`;
     }
 
     function expandCreateBox() {
       document.getElementById("new-title").classList.remove("hidden");
       document.getElementById("create-actions").classList.remove("hidden");
-      document.getElementById("new-body").rows = 4;
+      document.getElementById("new-body").rows = 3;
     }
 
     function collapseCreateBox() {
@@ -578,7 +670,6 @@
       document.getElementById("new-title").value = "";
       document.getElementById("new-body").value = "";
       document.getElementById("new-pin").checked = false;
-      document.getElementById("new-folder").value = (activeFolderFilter !== 'ALL' && activeFolderFilter !== 'TRASH') ? activeFolderFilter : "GENERAL";
       document.getElementById("todo-items-builder").innerHTML = "";
       selectColor('default');
       if (isChecklistMode) toggleNoteType();
@@ -599,7 +690,7 @@
       div.className = "flex items-center gap-2";
       div.innerHTML = `
         <i data-lucide="square" class="w-3.5 h-3.5 text-zinc-600"></i>
-        <input type="text" placeholder="รายการสิ่งที่ต้องทำ..." class="todo-item-input w-full bg-transparent text-xs text-zinc-200 outline-none border-b border-zinc-800/80 py-1 font-mono">
+        <input type="text" placeholder="สิ่งที่ต้องทำ..." class="todo-item-input w-full bg-transparent text-xs text-zinc-200 outline-none border-b border-zinc-800/80 py-1 font-mono">
       `;
       document.getElementById("todo-items-builder").appendChild(div);
       lucide.createIcons();
@@ -608,7 +699,7 @@
 
     async function createNote() {
       const title = document.getElementById("new-title").value.trim();
-      const folder = document.getElementById("new-folder").value;
+      const folder = document.getElementById("new-folder").value || 'GENERAL';
       const isPinned = document.getElementById("new-pin").checked;
       let bodyData = null;
 
@@ -623,223 +714,506 @@
         bodyData = { type: 'note', text: body };
       }
 
-      const payload = await encryptData({ title, content: bodyData, color: activeColor, folder: folder });
-      const { data, error } = await supabaseClient.from('notes').insert([{ payload, is_pinned: isPinned, is_deleted: false, user_id: currentUser.id }]).select().single();
+      const note = {
+        id: 'note_' + Date.now(),
+        title,
+        content: bodyData,
+        folder,
+        color: activeColor,
+        is_pinned: isPinned,
+        updated_at: new Date().toISOString()
+      };
 
-      if (error) return alert("บันทึกไม่สำเร็จ: " + error.message);
-
-      localNotes.unshift({ id: data.id, title, content: bodyData, color: activeColor, folder: folder, is_pinned: isPinned, is_deleted: false, updated_at: data.updated_at });
-      
-      if (!customFolders.includes(folder)) {
-        customFolders.push(folder);
-        updateFolderUI();
-      }
-
+      appData.notes.unshift(note);
+      await syncSaveCategory('keep_notes');
       collapseCreateBox();
       renderNotes();
-      showToast("สร้างบันทึกและเข้ารหัสสำเร็จแล้ว ✦");
+      showToast("บันทึกโน้ตสำเร็จ ✦");
     }
 
-    async function toggleCheckItem(noteId, itemIdx) {
-      const note = localNotes.find(n => n.id === noteId);
-      if (!note || note.content.type !== 'checklist') return;
-
-      note.content.items[itemIdx].done = !note.content.items[itemIdx].done;
+    async function deleteNote(id) {
+      if (!confirm("ต้องการลบโน้ตนี้ใช่หรือไม่?")) return;
+      appData.notes = appData.notes.filter(n => n.id !== id);
+      await syncSaveCategory('keep_notes');
       renderNotes();
-
-      const payload = await encryptData({ title: note.title, content: note.content, color: note.color, folder: note.folder });
-      await supabaseClient.from('notes').update({ payload, updated_at: new Date().toISOString() }).eq('id', noteId);
+      showToast("ลบโน้ตเรียบร้อย", "info");
     }
 
-    async function togglePin(id) {
-      const note = localNotes.find(n => n.id === id);
+    async function togglePinNote(id) {
+      const note = appData.notes.find(n => n.id === id);
       if (!note) return;
       note.is_pinned = !note.is_pinned;
-      await supabaseClient.from('notes').update({ is_pinned: note.is_pinned }).eq('id', id);
-      renderNotes();
-      showToast(note.is_pinned ? "ปักหมุดบันทึกแล้ว" : "ยกเลิกการปักหมุดแล้ว", "info");
-    }
-
-    function openDeleteModal(id, permanent = false) {
-      noteIdToDelete = id;
-      isPermanentDelete = permanent;
-      document.getElementById("modal-title").innerText = permanent ? "PERMANENT DESTRUCTION" : "MOVE TO TRASH";
-      document.getElementById("modal-desc").innerText = permanent ? "การกระทำนี้จะลบข้อมูลที่เข้ารหัสลับออกจากฐานข้อมูลอย่างถาวร ไม่สามารถกู้คืนได้" : "ต้องการย้ายบันทึกนี้ไปถังขยะใช่หรือไม่? (สามารถกู้คืนได้ภายใน 30 วัน)";
-      document.getElementById("delete-modal").classList.remove("hidden");
-    }
-
-    function closeDeleteModal() {
-      noteIdToDelete = null;
-      document.getElementById("delete-modal").classList.add("hidden");
-    }
-
-    async function confirmDeleteNote() {
-      if (!noteIdToDelete) return;
-      const id = noteIdToDelete;
-      closeDeleteModal();
-      
-      if (isPermanentDelete) {
-        await supabaseClient.from('notes').delete().eq('id', id);
-        localNotes = localNotes.filter(n => n.id !== id);
-        showToast("ทำลายบันทึกถาวรเรียบร้อย", "error");
-      } else {
-        const delTime = new Date().toISOString();
-        await supabaseClient.from('notes').update({ is_deleted: true, deleted_at: delTime }).eq('id', id);
-        const note = localNotes.find(n => n.id === id);
-        if (note) {
-          note.is_deleted = true;
-          note.deleted_at = delTime;
-        }
-        showToast("ย้ายบันทึกลงถังขยะแล้ว", "info");
-      }
-      updateTrashCount();
+      await syncSaveCategory('keep_notes');
       renderNotes();
     }
 
-    async function restoreNote(id) {
-      await supabaseClient.from('notes').update({ is_deleted: false, deleted_at: null }).eq('id', id);
-      const note = localNotes.find(n => n.id === id);
-      if (note) {
-        note.is_deleted = false;
-        note.deleted_at = null;
-      }
-      updateTrashCount();
+    async function toggleNoteCheckItem(noteId, idx) {
+      const note = appData.notes.find(n => n.id === noteId);
+      if (!note || note.content.type !== 'checklist') return;
+      note.content.items[idx].done = !note.content.items[idx].done;
       renderNotes();
-      showToast("กู้คืนบันทึกกลับมาแล้ว ✦");
-    }
-
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text);
-      showToast("คัดลอกข้อความลงคลิปบอร์ดแล้ว");
+      await syncSaveCategory('keep_notes');
     }
 
     function renderNotes() {
-      const query = (document.getElementById("search-input")?.value || "").toLowerCase();
-      const inTrash = (activeFolderFilter === 'TRASH');
+      const query = (document.getElementById("note-search")?.value || "").toLowerCase();
+      const folders = Array.from(new Set(['GENERAL', ...appData.notes.map(n => n.folder || 'GENERAL')]));
+      
+      // Render Folder Pills
+      let pillsHtml = `<button onclick="setFilterFolder('ALL')" class="px-2.5 py-1 text-[11px] font-mono uppercase ${activeFilterFolder === 'ALL' ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400'}">#ALL</button>`;
+      folders.forEach(f => {
+        pillsHtml += `<button onclick="setFilterFolder('${f}')" class="px-2.5 py-1 text-[11px] font-mono uppercase ${activeFilterFolder === f ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400'}">#${f}</button>`;
+      });
+      document.getElementById("folder-pills").innerHTML = pillsHtml;
 
-      const filtered = localNotes.filter(n => {
-        if (inTrash) {
-          if (!n.is_deleted) return false;
-        } else {
-          if (n.is_deleted) return false;
-          if (activeFolderFilter !== 'ALL' && n.folder !== activeFolderFilter) return false;
-        }
+      // Select Dropdown
+      const select = document.getElementById("new-folder");
+      select.innerHTML = folders.map(f => `<option value="${f}">${f}</option>`).join("") + `<option value="__NEW__">+ สร้างโฟลเดอร์ใหม่...</option>`;
 
-        const titleMatch = (n.title || "").toLowerCase().includes(query);
-        let contentMatch = false;
-        if (n.content?.type === 'checklist') {
-          contentMatch = n.content.items.some(i => i.text.toLowerCase().includes(query));
-        } else {
-          contentMatch = (n.content?.text || "").toLowerCase().includes(query);
-        }
-        return titleMatch || contentMatch;
+      const filtered = appData.notes.filter(n => {
+        if (activeFilterFolder !== 'ALL' && n.folder !== activeFilterFolder) return false;
+        const tMatch = (n.title || "").toLowerCase().includes(query);
+        const cMatch = n.content?.type === 'checklist'
+          ? n.content.items.some(i => i.text.toLowerCase().includes(query))
+          : (n.content?.text || "").toLowerCase().includes(query);
+        return tMatch || cMatch;
       });
 
-      const pinned = filtered.filter(n => n.is_pinned && !inTrash);
-      const others = filtered.filter(n => !n.is_pinned || inTrash);
+      const pinned = filtered.filter(n => n.is_pinned);
+      const others = filtered.filter(n => !n.is_pinned);
 
-      const pinnedGrid = document.getElementById("pinned-grid");
-      const notesGrid = document.getElementById("notes-grid");
-      const pinnedSection = document.getElementById("pinned-section");
-      const othersLabel = document.getElementById("others-label");
-
-      pinnedGrid.innerHTML = pinned.map(n => buildCardHtml(n, false)).join("");
-      notesGrid.innerHTML = others.map(n => buildCardHtml(n, inTrash)).join("");
-
-      pinnedSection.classList.toggle("hidden", pinned.length === 0 || inTrash);
-      othersLabel.innerText = inTrash ? "DELETED ENTRIES" : (activeFolderFilter === 'ALL' ? 'ALL NOTES' : `FOLDER: ${activeFolderFilter}`);
-
+      document.getElementById("pinned-grid").innerHTML = pinned.map(buildNoteCardHtml).join("");
+      document.getElementById("notes-grid").innerHTML = others.map(buildNoteCardHtml).join("");
+      document.getElementById("pinned-section").classList.toggle("hidden", pinned.length === 0);
       lucide.createIcons();
     }
 
-    function buildCardHtml(n, inTrash) {
-      const colorClass = `color-${n.color || 'default'}`;
+    function buildNoteCardHtml(n) {
       let bodyHtml = '';
-      let rawTextForCopy = n.title ? `${n.title}\n\n` : '';
-
       if (n.content?.type === 'checklist') {
-        bodyHtml = `<div class="space-y-1 mt-2">` + n.content.items.map((it, idx) => {
-          rawTextForCopy += `[${it.done ? 'x' : ' '}] ${it.text}\n`;
-          return `
-            <div onclick="${inTrash ? '' : `toggleCheckItem('${n.id}', ${idx})`}" class="flex items-center gap-2 ${inTrash ? '' : 'cursor-pointer'} py-0.5">
-              <i data-lucide="${it.done ? 'check-square' : 'square'}" class="w-3.5 h-3.5 ${it.done ? 'text-emerald-400' : 'text-zinc-600'}"></i>
-              <span class="text-xs ${it.done ? 'line-through text-zinc-600' : 'text-zinc-300'}">${escapeHtml(it.text)}</span>
-            </div>
-          `;
-        }).join("") + `</div>`;
+        bodyHtml = `<div class="space-y-1 mt-2">` + n.content.items.map((it, idx) => `
+          <div onclick="toggleNoteCheckItem('${n.id}', ${idx})" class="flex items-center gap-2 cursor-pointer py-0.5">
+            <i data-lucide="${it.done ? 'check-square' : 'square'}" class="w-3.5 h-3.5 ${it.done ? 'text-emerald-400' : 'text-zinc-600'}"></i>
+            <span class="text-xs ${it.done ? 'line-through text-zinc-600' : 'text-zinc-300'}">${escapeHtml(it.text)}</span>
+          </div>
+        `).join("") + `</div>`;
       } else {
-        const plainText = n.content?.text || '';
-        rawTextForCopy += plainText;
-        bodyHtml = `<div class="md-content text-xs text-zinc-400 mt-2 break-words leading-relaxed">${marked.parse(plainText)}</div>`;
+        bodyHtml = `<div class="md-content text-xs text-zinc-400 mt-2 break-words leading-relaxed">${marked.parse(n.content?.text || '')}</div>`;
       }
 
-      const folderTag = n.folder && n.folder !== 'GENERAL' 
-        ? `<span class="text-[9px] px-1.5 py-0.5 border border-zinc-800 text-zinc-400 font-mono uppercase tracking-wider">#${n.folder}</span>` 
-        : '';
-
-      const actions = inTrash 
-        ? `
-          <button onclick="restoreNote('${n.id}')" title="Restore" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 text-[11px] uppercase">
-            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> กู้คืน
-          </button>
-          <button onclick="openDeleteModal('${n.id}', true)" title="Delete Permanently" class="text-rose-500 hover:text-rose-400">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          </button>
-        `
-        : `
-          <button onclick="copyToClipboard(\`${escapeAttr(rawTextForCopy.trim())}\`)" title="Copy" class="hover:text-zinc-200">
-            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-          </button>
-          <button onclick="openDeleteModal('${n.id}', false)" title="Move to Trash" class="hover:text-red-400">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          </button>
-        `;
-
       return `
-        <div class="sigil-card ${colorClass} ${n.is_pinned && !inTrash ? 'pinned-badge' : ''} p-4 flex flex-col justify-between group">
+        <div class="sigil-card color-${n.color || 'default'} p-4 flex flex-col justify-between group">
           <div>
             <div class="flex items-start justify-between gap-2">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <h4 class="text-white font-bold text-sm tracking-wide break-words">${escapeHtml(n.title || 'UNTITLED')}</h4>
-                ${folderTag}
-              </div>
-              ${!inTrash ? `
-                <button onclick="togglePin('${n.id}')" class="text-zinc-600 hover:text-amber-400 transition-colors p-1">
-                  <i data-lucide="pin" class="w-3.5 h-3.5 ${n.is_pinned ? 'text-amber-400 fill-amber-400' : ''}"></i>
-                </button>
-              ` : ''}
+              <h4 class="text-white font-bold text-sm break-words">${escapeHtml(n.title || 'UNTITLED')}</h4>
+              <button onclick="togglePinNote('${n.id}')" class="text-zinc-600 hover:text-amber-400">
+                <i data-lucide="pin" class="w-3.5 h-3.5 ${n.is_pinned ? 'text-amber-400 fill-amber-400' : ''}"></i>
+              </button>
             </div>
+            <span class="text-[9px] text-zinc-500 font-mono uppercase tracking-widest block mt-0.5">#${n.folder}</span>
             ${bodyHtml}
           </div>
-          <div class="flex items-center justify-between pt-4 mt-3 border-t border-zinc-900/80 text-[10px] text-zinc-600">
+          <div class="flex items-center justify-between pt-3 mt-3 border-t border-zinc-900 text-[10px] text-zinc-600">
             <span>${new Date(n.updated_at).toLocaleDateString('th-TH')}</span>
-            <div class="flex items-center gap-2 ${inTrash ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity">
-              ${actions}
+            <button onclick="deleteNote('${n.id}')" class="hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function setFilterFolder(f) {
+      activeFilterFolder = f;
+      renderNotes();
+    }
+
+    function handleFolderSelectChange(sel) {
+      if (sel.value === '__NEW__') {
+        const name = prompt("ชื่อโฟลเดอร์ใหม่:");
+        if (name) {
+          const clean = name.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+          if (clean) {
+            sel.innerHTML = `<option value="${clean}">${clean}</option>` + sel.innerHTML;
+            sel.value = clean;
+            return;
+          }
+        }
+        sel.value = 'GENERAL';
+      }
+    }
+
+    // ================= 2. TIMETABLE SCHEDULE =================
+    async function addClassSchedule() {
+      const code = document.getElementById("class-code").value.trim();
+      const name = document.getElementById("class-name").value.trim();
+      const day = document.getElementById("class-day").value;
+      const start = document.getElementById("class-start").value;
+      const end = document.getElementById("class-end").value;
+      const room = document.getElementById("class-room").value.trim();
+
+      if (!name || !start || !end) return alert("กรุณาระบุชื่อวิชา และเวลาเริ่ม-สิ้นสุด");
+
+      const item = { id: 'class_' + Date.now(), code, name, day, start, end, room };
+      appData.timetable.push(item);
+      await syncSaveCategory('timetable');
+
+      document.getElementById("class-code").value = "";
+      document.getElementById("class-name").value = "";
+      document.getElementById("class-room").value = "";
+      renderTimetable();
+      checkUpcomingClass();
+      showToast("เพิ่มคาบเรียนสำเร็จ ✦");
+    }
+
+    async function deleteClass(id) {
+      appData.timetable = appData.timetable.filter(c => c.id !== id);
+      await syncSaveCategory('timetable');
+      renderTimetable();
+      checkUpcomingClass();
+    }
+
+    function renderTimetable() {
+      const days = [
+        { key: 'MON', label: 'MON // จันทร์' },
+        { key: 'TUE', label: 'TUE // อังคาร' },
+        { key: 'WED', label: 'WED // พุธ' },
+        { key: 'THU', label: 'THU // พฤหัส' },
+        { key: 'FRI', label: 'FRI // ศุกร์' }
+      ];
+
+      const container = document.getElementById("timetable-matrix");
+      container.innerHTML = days.map(d => {
+        const classes = appData.timetable.filter(c => c.day === d.key).sort((a,b) => a.start.localeCompare(b.start));
+        return `
+          <div class="sigil-card color-default p-3 space-y-2">
+            <div class="text-[11px] font-bold text-zinc-400 font-mono pb-1 border-b border-zinc-800 uppercase">${d.label}</div>
+            <div class="space-y-2">
+              ${classes.length === 0 ? '<div class="text-[10px] text-zinc-600 font-mono py-4 text-center">ไม่มีคาบเรียน</div>' : ''}
+              ${classes.map(c => `
+                <div class="bg-zinc-900/90 border border-zinc-800 p-2 text-xs relative group">
+                  <div class="text-[10px] text-amber-400 font-mono">${c.start} - ${c.end}</div>
+                  <div class="font-bold text-white mt-0.5 text-[11px]">${escapeHtml(c.name)}</div>
+                  <div class="text-[10px] text-zinc-400 font-mono flex items-center justify-between mt-1">
+                    <span>${escapeHtml(c.room || 'ONLINE')}</span>
+                    <span class="text-zinc-500">${escapeHtml(c.code || '')}</span>
+                  </div>
+                  <button onclick="deleteClass('${c.id}')" class="absolute top-2 right-2 text-zinc-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i data-lucide="x" class="w-3 h-3"></i>
+                  </button>
+                </div>
+              `).join("")}
             </div>
+          </div>
+        `;
+      }).join("");
+      lucide.createIcons();
+    }
+
+    function checkUpcomingClass() {
+      const dayMap = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+      const now = new Date();
+      const currentDay = dayMap[now.getDay()];
+      const currentTime = now.toTimeString().slice(0, 5); // "HH:MM"
+
+      const todayClasses = appData.timetable.filter(c => c.day === currentDay).sort((a,b) => a.start.localeCompare(b.start));
+      const current = todayClasses.find(c => c.start <= currentTime && c.end >= currentTime);
+      const next = todayClasses.find(c => c.start > currentTime);
+
+      const titleEl = document.getElementById("next-class-title");
+      const detailEl = document.getElementById("next-class-detail");
+      const badgeEl = document.getElementById("next-class-badge");
+
+      if (current) {
+        titleEl.innerText = `กำลังเรียน: ${current.name} (${current.code || ''})`;
+        detailEl.innerText = `ห้องเรียน: ${current.room || 'ไม่ระบุ'} | เลิกคาบเวลา ${current.end}`;
+        badgeEl.innerText = "IN PROGRESS";
+        badgeEl.className = "px-3 py-1 bg-amber-950/60 border border-amber-500/50 text-amber-300 text-xs font-mono";
+      } else if (next) {
+        titleEl.innerText = `คาบถัดไป: ${next.name} (${next.code || ''})`;
+        detailEl.innerText = `เริ่มเวลา ${next.start} - ${next.end} | ห้อง ${next.room || 'ไม่ระบุ'}`;
+        badgeEl.innerText = `NEXT @ ${next.start}`;
+        badgeEl.className = "px-3 py-1 bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 text-xs font-mono";
+      } else {
+        titleEl.innerText = "ไม่มีคาบเรียนที่เหลือในวันนี้";
+        detailEl.innerText = "เตรียมตัวอ่านหนังสือ หรือพักผ่อนตามอัธยาศัย";
+        badgeEl.innerText = "ALL DONE";
+        badgeEl.className = "px-3 py-1 bg-zinc-900 border border-zinc-700 text-zinc-400 text-xs font-mono";
+      }
+    }
+
+    // ================= 3. KANBAN BOARD =================
+    async function createKanbanTask() {
+      const title = document.getElementById("kanban-title").value.trim();
+      const subject = document.getElementById("kanban-subject").value.trim();
+      const deadline = document.getElementById("kanban-deadline").value;
+
+      if (!title) return alert("กรุณาใส่ชื่องาน");
+
+      const task = {
+        id: 'task_' + Date.now(),
+        title,
+        subject: subject || 'ทั่วไป',
+        deadline,
+        status: 'todo'
+      };
+
+      appData.assignments.push(task);
+      await syncSaveCategory('assignments');
+
+      document.getElementById("kanban-title").value = "";
+      document.getElementById("kanban-subject").value = "";
+      document.getElementById("kanban-deadline").value = "";
+      renderKanban();
+      showToast("เพิ่มการบ้านลงกระดานแล้ว");
+    }
+
+    async function moveKanbanStatus(id, newStatus) {
+      const task = appData.assignments.find(t => t.id === id);
+      if (!task) return;
+      task.status = newStatus;
+      await syncSaveCategory('assignments');
+      renderKanban();
+    }
+
+    async function deleteKanbanTask(id) {
+      appData.assignments = appData.assignments.filter(t => t.id !== id);
+      await syncSaveCategory('assignments');
+      renderKanban();
+    }
+
+    function renderKanban() {
+      const statuses = ['todo', 'doing', 'review', 'done'];
+      statuses.forEach(s => {
+        const tasks = appData.assignments.filter(t => t.status === s);
+        document.getElementById(`count-${s}`).innerText = tasks.length;
+        const col = document.getElementById(`col-${s}`);
+        col.innerHTML = tasks.map(t => {
+          let nextBtn = '';
+          if (s === 'todo') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'doing')" class="text-[10px] text-amber-400 hover:underline font-mono">DOING ➔</button>`;
+          if (s === 'doing') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'review')" class="text-[10px] text-violet-400 hover:underline font-mono">REVIEW ➔</button>`;
+          if (s === 'review') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'done')" class="text-[10px] text-emerald-400 hover:underline font-mono">DONE ➔</button>`;
+          if (s === 'done') nextBtn = `<button onclick="moveKanbanStatus('${t.id}', 'todo')" class="text-[10px] text-zinc-500 hover:underline font-mono">↺ REOPEN</button>`;
+
+          return `
+            <div class="sigil-card color-default p-3 space-y-2 group">
+              <div class="flex items-start justify-between gap-1">
+                <span class="text-[9px] px-1.5 py-0.5 border border-zinc-800 text-zinc-400 font-mono uppercase">${escapeHtml(t.subject)}</span>
+                <button onclick="deleteKanbanTask('${t.id}')" class="text-zinc-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <i data-lucide="trash-2" class="w-3 h-3"></i>
+                </button>
+              </div>
+              <h5 class="text-xs font-bold text-white leading-snug">${escapeHtml(t.title)}</h5>
+              <div class="flex items-center justify-between pt-2 border-t border-zinc-900 text-[10px] font-mono">
+                <span class="${t.deadline ? 'text-zinc-500' : 'text-zinc-600'}">📅 ${t.deadline || 'NO DATE'}</span>
+                ${nextBtn}
+              </div>
+            </div>
+          `;
+        }).join("");
+      });
+      lucide.createIcons();
+    }
+
+    // ================= 4. POMODORO TIMER & STATS =================
+    function updatePomoTimerDisplay() {
+      const m = String(pomoMinutes).padStart(2, '0');
+      const s = String(pomoSeconds).padStart(2, '0');
+      document.getElementById("pomo-timer").innerText = `${m}:${s}`;
+    }
+
+    function togglePomodoro() {
+      const btn = document.getElementById("pomo-start-btn");
+      if (isPomoRunning) {
+        clearInterval(pomoInterval);
+        isPomoRunning = false;
+        btn.innerText = "START";
+      } else {
+        isPomoRunning = true;
+        btn.innerText = "PAUSE";
+        pomoInterval = setInterval(async () => {
+          if (pomoSeconds === 0) {
+            if (pomoMinutes === 0) {
+              clearInterval(pomoInterval);
+              isPomoRunning = false;
+              btn.innerText = "START";
+              handlePomoComplete();
+              return;
+            }
+            pomoMinutes--;
+            pomoSeconds = 59;
+          } else {
+            pomoSeconds--;
+          }
+          updatePomoTimerDisplay();
+        }, 1000);
+      }
+    }
+
+    function resetPomodoro() {
+      clearInterval(pomoInterval);
+      isPomoRunning = false;
+      document.getElementById("pomo-start-btn").innerText = "START";
+      pomoMinutes = isBreakMode ? 5 : 25;
+      pomoSeconds = 0;
+      updatePomoTimerDisplay();
+    }
+
+    function switchPomoMode(mode) {
+      isBreakMode = (mode === 'break');
+      document.getElementById("pomo-mode-badge").innerText = isBreakMode ? "SHORT BREAK" : "FOCUS SESSION";
+      document.getElementById("pomo-mode-badge").className = isBreakMode 
+        ? "text-[11px] px-3 py-1 bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 font-mono uppercase tracking-widest mb-4"
+        : "text-[11px] px-3 py-1 bg-rose-950/60 border border-rose-500/50 text-rose-300 font-mono uppercase tracking-widest mb-4";
+      resetPomodoro();
+    }
+
+    async function handlePomoComplete() {
+      if (!isBreakMode) {
+        const subject = document.getElementById("pomo-subject-input").value.trim() || 'ทั่วไป';
+        appData.pomo_stats[subject] = (appData.pomo_stats[subject] || 0) + 25;
+        await syncSaveCategory('pomodoro_stats');
+        renderPomodoroStats();
+        showToast(`ยินดีด้วย! คุณสะสมเวลาอ่านวิชา ${subject} เพิ่มอีก 25 นาที ✦`);
+        switchPomoMode('break');
+      } else {
+        showToast("หมดเวลาพักแล้ว พร้อมเริ่มรอบถัดไปหรือยัง?", "info");
+        switchPomoMode('focus');
+      }
+    }
+
+    function renderPomodoroStats() {
+      const statsList = document.getElementById("pomo-stats-list");
+      const totalEl = document.getElementById("total-focus-minutes");
+      const entries = Object.entries(appData.pomo_stats);
+
+      let total = 0;
+      if (entries.length === 0) {
+        statsList.innerHTML = `<div class="text-zinc-600 text-center py-6">ยังไม่มีบันทึกเวลาเรียน</div>`;
+        totalEl.innerText = "0 นาที";
+        return;
+      }
+
+      statsList.innerHTML = entries.map(([sub, mins]) => {
+        total += mins;
+        const hours = (mins / 60).toFixed(1);
+        return `
+          <div class="flex items-center justify-between p-2 bg-zinc-900 border border-zinc-800">
+            <span class="text-white">${escapeHtml(sub)}</span>
+            <span class="text-amber-400">${mins} นาที (${hours} ชม.)</span>
+          </div>
+        `;
+      }).join("");
+
+      totalEl.innerText = `${total} นาที (~${(total/60).toFixed(1)} ชม.)`;
+    }
+
+    // ================= 5. GPA SIMULATOR =================
+    const GRADE_POINTS = { 'A': 4.0, 'B+': 3.5, 'B': 3.0, 'C+': 2.5, 'C': 2.0, 'D+': 1.5, 'D': 1.0, 'F': 0.0 };
+
+    function addGpaCourseRow(name = '', credits = 3, targetGrade = 'A') {
+      const row = { id: 'crs_' + Date.now(), name, credits, targetGrade };
+      if (!appData.gpa.courses) appData.gpa.courses = [];
+      appData.gpa.courses.push(row);
+      renderGpaCourses();
+      calculateGpa();
+    }
+
+    function removeGpaCourse(id) {
+      appData.gpa.courses = appData.gpa.courses.filter(c => c.id !== id);
+      renderGpaCourses();
+      calculateGpa();
+    }
+
+    function renderGpaCourses() {
+      const container = document.getElementById("gpa-courses-table");
+      if (!appData.gpa.courses || appData.gpa.courses.length === 0) {
+        container.innerHTML = `<div class="text-xs text-zinc-600 font-mono text-center py-4">ยังไม่ได้เพิ่มรายวิชาในเทอมนี้</div>`;
+        return;
+      }
+
+      container.innerHTML = appData.gpa.courses.map(c => `
+        <div class="grid grid-cols-12 gap-2 items-center bg-zinc-900 p-2 border border-zinc-800 text-xs font-mono">
+          <input type="text" value="${escapeHtml(c.name)}" placeholder="ชื่อวิชา" onchange="updateCourseField('${c.id}', 'name', this.value)" class="col-span-6 bg-transparent text-white border-b border-zinc-800 outline-none px-1">
+          <input type="number" value="${c.credits}" min="1" max="6" onchange="updateCourseField('${c.id}', 'credits', parseFloat(this.value))" class="col-span-2 bg-transparent text-center text-white border-b border-zinc-800 outline-none">
+          <select onchange="updateCourseField('${c.id}', 'targetGrade', this.value)" class="col-span-3 bg-zinc-950 border border-zinc-800 text-amber-400 py-1 px-1 outline-none text-center">
+            ${Object.keys(GRADE_POINTS).map(g => `<option value="${g}" ${c.targetGrade === g ? 'selected' : ''}>${g} (${GRADE_POINTS[g]})</option>`).join("")}
+          </select>
+          <button onclick="removeGpaCourse('${c.id}')" class="col-span-1 text-zinc-600 hover:text-rose-400 flex justify-center">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      `).join("");
+      lucide.createIcons();
+    }
+
+    function updateCourseField(id, field, val) {
+      const c = appData.gpa.courses.find(x => x.id === id);
+      if (c) {
+        c[field] = val;
+        calculateGpa();
+      }
+    }
+
+    async function calculateGpa() {
+      const targetGpax = parseFloat(document.getElementById("target-gpax").value) || 3.50;
+      const accumCredits = parseFloat(document.getElementById("accum-credits").value) || 0;
+      const currentGpax = parseFloat(document.getElementById("current-gpax").value) || 0;
+
+      let termCredits = 0;
+      let termQualityPoints = 0;
+
+      (appData.gpa.courses || []).forEach(c => {
+        const cred = parseFloat(c.credits) || 0;
+        const pts = GRADE_POINTS[c.targetGrade] ?? 4.0;
+        termCredits += cred;
+        termQualityPoints += cred * pts;
+      });
+
+      const termGpa = termCredits > 0 ? (termQualityPoints / termCredits) : 0;
+      const totalCredits = accumCredits + termCredits;
+      const currentPoints = accumCredits * currentGpax;
+      const projectedGpax = totalCredits > 0 ? ((currentPoints + termQualityPoints) / totalCredits) : currentGpax;
+
+      // Calculate required term GPA to achieve target
+      let requiredTermGpa = 0;
+      if (termCredits > 0) {
+        requiredTermGpa = ((targetGpax * totalCredits) - currentPoints) / termCredits;
+      }
+
+      appData.gpa.target = targetGpax;
+      appData.gpa.accumCredits = accumCredits;
+      appData.gpa.currentGpax = currentGpax;
+      await syncSaveCategory('gpa_profile');
+
+      const resultBox = document.getElementById("gpa-simulator-result");
+      const isReachable = requiredTermGpa <= 4.0;
+
+      resultBox.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <span class="text-zinc-500 uppercase block text-[10px]">เกรดเฉลี่ยเทอมนี้ (Term GPA)</span>
+            <span class="text-lg font-bold text-white">${termGpa.toFixed(2)}</span>
+            <span class="text-zinc-600 block text-[10px]">จาก ${termCredits} หน่วยกิต</span>
+          </div>
+          <div>
+            <span class="text-zinc-500 uppercase block text-[10px]">เกรดเฉลี่ยสะสมหลังจบเทอมนี้ (Projected GPAX)</span>
+            <span class="text-lg font-bold ${projectedGpax >= targetGpax ? 'text-emerald-400' : 'text-amber-400'}">${projectedGpax.toFixed(2)}</span>
+            <span class="text-zinc-600 block text-[10px]">เป้าหมายเดิม: ${targetGpax.toFixed(2)}</span>
+          </div>
+          <div>
+            <span class="text-zinc-500 uppercase block text-[10px]">เกรดเทอมนี้ที่ต้องทำให้ได้เพื่อแตะเป้า</span>
+            <span class="text-lg font-bold ${isReachable ? 'text-violet-400' : 'text-rose-500'}">
+              ${isReachable ? requiredTermGpa.toFixed(2) : 'เกิน 4.00 (ต้องใช้เวลาเพิ่ม)'}
+            </span>
+            <span class="text-zinc-600 block text-[10px]">${isReachable ? '✦ อยู่ในระยะที่เป็นไปได้' : '⚠️ เป้าหมายสูงเกิน 1 เทอม'}</span>
           </div>
         </div>
       `;
     }
 
     function escapeHtml(str) {
-      return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
-    }
-
-    function escapeAttr(str) {
-      return str.replace(/`/g, '\\`').replace(/\$/g, '\\$');
-    }
-
-    function lockVault() {
-      currentCryptoKey = null;
-      localNotes = [];
-      clearTimeout(inactivityTimer);
-      closeDeleteModal();
-      document.getElementById("master-pass").value = "";
-      document.getElementById("keep-screen").classList.add("hidden");
-      document.getElementById("lock-screen").classList.remove("hidden");
-      if (currentUser) {
-        document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-zinc-400 font-mono tracking-wider">${currentUser.email} (LOCKED)</span>`;
-      }
+      return (str || '').replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
     }
   </script>
 </body>
