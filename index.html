@@ -586,9 +586,10 @@
       }
     }
 
+    // ฟังก์ชันบันทึกข้อมูล พร้อมแสดงข้อผิดพลาดถ้ามี
     async function syncSaveCategory(category) {
       if (!currentCryptoKey || !currentUser) {
-        console.error("No key or user found!");
+        console.error("Missing key or user session!");
         return;
       }
       try {
@@ -600,21 +601,23 @@
           .upsert({
             user_id: currentUser.id,
             category: category,
-            payload: encrypted
+            payload: encrypted,
+            updated_at: new Date().toISOString()
           }, { onConflict: 'user_id,category' });
 
         if (error) {
           console.error("Supabase Save Error:", error);
-          showToast("บันทึกไม่สำเร็จ: " + error.message, "error");
+          alert("บันทึกลงฐานข้อมูลไม่สำเร็จ: " + error.message);
         } else {
-          console.log("Save success:", category);
+          console.log("บันทึก Cloud สำเร็จ:", category);
         }
       } catch (err) {
-        console.error("Encrypt/Save error:", err);
-        showToast("เกิดข้อผิดพลาดในการเข้ารหัส: " + err.message, "error");
+        console.error("Encryption/Save error:", err);
+        alert("เกิดข้อผิดพลาดในการเข้ารหัส: " + err.message);
       }
     }
 
+    // ฟังก์ชันโหลดข้อมูลกลับมาแสดงผล
     async function syncLoadAllData() {
       if (!currentUser) return;
       const { data, error } = await supabaseClient
@@ -698,6 +701,7 @@
       div.querySelector('input').focus();
     }
 
+    // แก้ไขจุดสำคัญ: ต้อง await บันทึกลง Cloud ให้สำเร็จแน่นอนก่อนสั่ง collapse
     async function createNote() {
       const title = document.getElementById("new-title").value.trim();
       const folder = document.getElementById("new-folder").value || 'GENERAL';
@@ -726,9 +730,12 @@
       };
 
       appData.notes.unshift(note);
+
+      // บันทึกขึ้น Cloud ทันที
+      await syncSaveCategory('keep_notes');
+
       renderNotes();
       collapseCreateBox();
-      await syncSaveCategory('keep_notes');
       showToast("บันทึกโน้ตสำเร็จ ✦");
     }
 
