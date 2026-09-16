@@ -3,14 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GOTHIC // STUDY & KEEP</title>
+  <title>GOTHIC // STUDY & KEEP (CLOUD SYNC)</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- CryptoJS for Encryption -->
+  <!-- CryptoJS for Local End-to-End Encryption -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Prompt:wght@300;400;600&display=swap');
@@ -20,7 +22,6 @@
     .font-mono-code {
       font-family: 'JetBrains Mono', monospace;
     }
-    /* Custom Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -39,30 +40,41 @@
 </head>
 <body class="bg-zinc-950 text-zinc-300 min-h-screen flex flex-col font-sans selection:bg-rose-950 selection:text-rose-200">
 
-  <!-- ================= AUTH OVERLAY (VAULT LOCK) ================= -->
+  <!-- ================= AUTH OVERLAY (EMAIL & PASSWORD) ================= -->
   <div id="vault-lock-screen" class="fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-md w-full shadow-2xl space-y-6">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-md w-full shadow-2xl space-y-5">
       <div class="text-center space-y-2">
         <div class="inline-flex p-3 rounded-2xl bg-zinc-800/80 border border-zinc-700 text-rose-500">
-          <i data-lucide="shield-alert" class="w-8 h-8"></i>
+          <i data-lucide="cloud-lock" class="w-8 h-8"></i>
         </div>
-        <h2 class="text-xl font-mono-code font-bold text-zinc-100 uppercase tracking-wider">GOTHIC // VAULT SECURITY</h2>
-        <p class="text-xs text-zinc-400">กรอกรหัสผ่านเพื่อถอดรหัสฐานข้อมูลส่วนตัว (AES-256)</p>
+        <h2 class="text-xl font-mono-code font-bold text-zinc-100 uppercase tracking-wider">GOTHIC // CLOUD VAULT</h2>
+        <p class="text-xs text-zinc-400">เข้าสู่ระบบด้วย Email เพื่อเชื่อมต่อและซิงก์ข้อมูลข้ามอุปกรณ์</p>
       </div>
       
-      <div class="space-y-4">
+      <div class="space-y-3 font-mono-code">
         <div>
-          <input type="password" id="vault-password-input" placeholder="Enter Vault Key..." class="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 px-4 py-3 rounded-xl focus:border-rose-600 focus:outline-none font-mono-code text-sm" />
-          <p id="vault-error-msg" class="text-xs text-rose-500 mt-1.5 hidden">รหัสผ่านไม่ถูกต้อง หรือข้อมูลไม่สามารถถอดรหัสได้</p>
+          <label class="block text-[11px] text-zinc-500 mb-1">ACCOUNT EMAIL</label>
+          <input type="email" id="auth-email-input" placeholder="student@example.com" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 px-4 py-2.5 rounded-xl focus:border-rose-600 focus:outline-none text-xs" />
         </div>
-        <button onclick="unlockVault()" class="w-full bg-rose-700 hover:bg-rose-600 text-white font-mono-code font-medium py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
-          <i data-lucide="unlock" class="w-4 h-4"></i> ปลดล็อก VAULT
-        </button>
+        <div>
+          <label class="block text-[11px] text-zinc-500 mb-1">MASTER PASSWORD</label>
+          <input type="password" id="auth-password-input" placeholder="••••••••••••" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 px-4 py-2.5 rounded-xl focus:border-rose-600 focus:outline-none text-xs" />
+          <p id="auth-status-msg" class="text-xs text-rose-500 mt-1.5 hidden"></p>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button onclick="handleCloudSignIn()" id="btn-signin" class="flex-1 bg-rose-700 hover:bg-rose-600 text-white font-medium py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5">
+            <i data-lucide="log-in" class="w-4 h-4"></i> เข้าสู่ระบบ
+          </button>
+          <button onclick="handleCloudSignUp()" id="btn-signup" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5 border border-zinc-700">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> สร้างบัญชีใหม่
+          </button>
+        </div>
       </div>
-      <div class="text-center">
-        <button onclick="resetVaultDatabase()" class="text-[11px] text-zinc-500 hover:text-rose-400 transition underline">
-          ล้างข้อมูลและเริ่มต้นใหม่ (Reset Storage)
-        </button>
+
+      <div class="pt-2 text-center border-t border-zinc-800/80">
+        <span class="text-[10px] text-zinc-500 block">
+          * ข้อมูลเข้ารหัสจากฝั่งผู้ใช้ (Client-Side Encrypted) ก่อนส่งไปเก็บที่ Cloud
+        </span>
       </div>
     </div>
   </div>
@@ -76,7 +88,6 @@
         </span>
       </div>
 
-      <!-- Navigation Tabs -->
       <nav class="flex items-center gap-1 overflow-x-auto py-2">
         <button onclick="switchTab('notes')" id="btn-tab-notes" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-mono-code transition bg-zinc-800 text-rose-400 border border-zinc-700/50 flex items-center gap-1.5">
           <i data-lucide="file-text" class="w-3.5 h-3.5"></i> NOTES
@@ -95,14 +106,16 @@
         </button>
       </nav>
 
-      <!-- Lock Action -->
-      <button onclick="lockVault()" class="text-xs font-mono-code px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-rose-400 transition flex items-center gap-1.5">
-        <i data-lucide="lock" class="w-3.5 h-3.5"></i> LOCK
-      </button>
+      <div class="flex items-center gap-3">
+        <span id="user-session-badge" class="hidden sm:inline-block text-[11px] font-mono-code text-emerald-400/90"></span>
+        <button onclick="handleCloudSignOut()" class="text-xs font-mono-code px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-rose-400 transition flex items-center gap-1.5">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i> LOGOUT
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- ================= MAIN CONTENT CONTAINER ================= -->
+  <!-- ================= MAIN CONTENT ================= -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full">
 
     <!-- 1. NOTES TAB -->
@@ -110,16 +123,15 @@
       <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
         <input type="text" id="note-title-input" placeholder="หัวข้อโน้ต หรือชื่องานด่วน..." class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-200 mb-2 focus:outline-none focus:border-zinc-700" />
         <textarea id="note-content-input" rows="3" placeholder="จดบันทึกความคิด, โค้ด, หรือข้อมูลสำคัญ..." class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-300 focus:outline-none focus:border-zinc-700 resize-none font-mono-code"></textarea>
-        <div class="flex justify-end mt-2">
+        <div class="flex justify-between items-center mt-2">
+          <span id="sync-status" class="text-[10px] font-mono-code text-zinc-500">พร้อมใช้งาน</span>
           <button onclick="saveNote()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-4 py-1.5 rounded-lg text-xs font-mono-code transition flex items-center gap-1.5">
-            <i data-lucide="save" class="w-3.5 h-3.5"></i> SAVE ENCRYPTED NOTE
+            <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i> SAVE & SYNC
           </button>
         </div>
       </div>
 
-      <div id="notes-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- บันทึกโน้ตจะถูกแสดงที่นี่ -->
-      </div>
+      <div id="notes-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
     </section>
 
     <!-- 2. TIMETABLE TAB -->
@@ -134,9 +146,7 @@
         </button>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-3" id="schedule-grid">
-        <!-- 5 วันทำการ (จันทร์-ศุกร์) -->
-      </div>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3" id="schedule-grid"></div>
     </section>
 
     <!-- 3. KANBAN TAB -->
@@ -210,16 +220,13 @@
 
       <div class="max-w-md mx-auto bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4">
         <h4 class="text-xs font-mono-code text-zinc-400 mb-2">ประวัติเวลาอ่านหนังสือสะสม</h4>
-        <div id="pomodoro-logs" class="space-y-1.5 text-xs font-mono-code text-zinc-400">
-          <!-- สถิติจะแสดงที่นี่ -->
-        </div>
+        <div id="pomodoro-logs" class="space-y-1.5 text-xs font-mono-code text-zinc-400"></div>
       </div>
     </section>
 
     <!-- 5. GPA SIMULATOR TAB -->
     <section id="tab-gpa" class="hidden space-y-4">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <!-- Courses List -->
         <div class="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
           <div class="flex justify-between items-center">
             <h3 class="text-xs font-mono-code font-bold text-zinc-200 uppercase">รายวิชาในภาคการศึกษาปัจจุบัน</h3>
@@ -237,9 +244,7 @@
                   <th class="pb-2 w-8"></th>
                 </tr>
               </thead>
-              <tbody id="gpa-table-body" class="divide-y divide-zinc-800/50">
-                <!-- Course rows -->
-              </tbody>
+              <tbody id="gpa-table-body" class="divide-y divide-zinc-800/50"></tbody>
             </table>
           </div>
           <button onclick="calculateTermGpa()" class="w-full bg-rose-700 hover:bg-rose-600 text-white py-2 rounded-xl text-xs font-mono-code transition">
@@ -247,7 +252,6 @@
           </button>
         </div>
 
-        <!-- Simulator & Output -->
         <div class="space-y-4">
           <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl">
             <div class="text-[11px] font-mono-code text-zinc-500 uppercase">ESTIMATED TERM GPA</div>
@@ -289,8 +293,6 @@
   </main>
 
   <!-- ================= MODALS ================= -->
-
-  <!-- 1. ADD SCHEDULE MODAL -->
   <div id="schedule-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
     <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-5 space-y-3 font-sans">
       <h3 class="text-sm font-mono-code font-bold text-zinc-100 uppercase">ADD CLASS SCHEDULE</h3>
@@ -333,18 +335,17 @@
     </div>
   </div>
 
-  <!-- 2. ADD TASK MODAL -->
   <div id="task-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
     <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-5 space-y-3 font-sans">
       <h3 class="text-sm font-mono-code font-bold text-zinc-100 uppercase">ADD ASSIGNMENT</h3>
       <div class="space-y-2 text-xs">
         <div>
           <label class="text-zinc-500 block mb-1">ชื่องาน / กิจกรรม</label>
-          <input type="text" id="task-input-title" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-zinc-200" placeholder="เช่น ส่งเอกสารโปรเจกต์" />
+          <input type="text" id="task-input-title" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-zinc-200" placeholder="เช่น รายงาน Final Project" />
         </div>
         <div>
           <label class="text-zinc-500 block mb-1">วิชา / หมวดหมู่</label>
-          <input type="text" id="task-input-subject" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-zinc-200" placeholder="SE 101" />
+          <input type="text" id="task-input-subject" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-zinc-200" placeholder="CPE 202" />
         </div>
         <div>
           <label class="text-zinc-500 block mb-1">กำหนดส่ง</label>
@@ -358,11 +359,21 @@
     </div>
   </div>
 
-  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <!-- ================= JAVASCRIPT ================= -->
   <script>
-    // --- Global Application State ---
-    let currentVaultKey = null;
-    let vaultData = {
+    // -------------------------------------------------------------
+    // 1. SUPABASE CONFIGURATION (เปลี่ยน URL และ ANON KEY ตรงนี้)
+    // -------------------------------------------------------------
+    const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
+    const SUPABASE_ANON_KEY = "YOUR_ANON_KEY_HERE";
+    
+    // เริ่มต้นเชื่อมต่อ Supabase Client
+    const supabase = (SUPABASE_URL.includes("YOUR_PROJECT_ID")) 
+      ? null 
+      : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Default Fallback Data Structure
+    const defaultData = {
       notes: [],
       schedules: [],
       tasks: [],
@@ -379,94 +390,191 @@
       }
     };
 
+    let currentUser = null;
+    let currentMasterKey = null;
+    let vaultData = JSON.parse(JSON.stringify(defaultData));
     const GRADE_POINTS = { 'A': 4.0, 'B+': 3.5, 'B': 3.0, 'C+': 2.5, 'C': 2.0, 'D+': 1.5, 'D': 1.0, 'F': 0.0 };
 
-    // --- Safe Encryption & Decryption ---
-    function encryptData(obj, key) {
+    // --- Safe Crypto Utilities ---
+    function encryptPayload(dataObj, secretKey) {
       try {
-        const jsonStr = JSON.stringify(obj);
-        return CryptoJS.AES.encrypt(jsonStr, key).toString();
+        const text = JSON.stringify(dataObj);
+        return CryptoJS.AES.encrypt(text, secretKey).toString();
       } catch (e) {
-        console.error("Encryption error:", e);
         return null;
       }
     }
 
-    function decryptData(cipherText, key) {
-      if (!cipherText || typeof cipherText !== 'string' || !cipherText.trim()) {
-        return null;
-      }
+    function decryptPayload(cipherText, secretKey) {
+      if (!cipherText || typeof cipherText !== 'string' || !cipherText.trim()) return null;
       try {
-        const bytes = CryptoJS.AES.decrypt(cipherText, key);
+        const bytes = CryptoJS.AES.decrypt(cipherText, secretKey);
         const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
-        
-        // ป้องกัน Unexpected end of JSON input
-        if (!decryptedStr || !decryptedStr.trim()) {
-          return null;
-        }
+        if (!decryptedStr || !decryptedStr.trim()) return null;
         return JSON.parse(decryptedStr);
-      } catch (err) {
-        // เงียบ Warning เมื่อไม่ใช่ข้อมูล JSON หรือรหัสผ่านไม่ตรง
+      } catch (e) {
         return null;
       }
     }
 
-    function syncSaveVault() {
-      if (!currentVaultKey) return;
-      const encrypted = encryptData(vaultData, currentVaultKey);
-      if (encrypted) {
-        localStorage.setItem('gothic_vault_db', encrypted);
-      }
-    }
+    // --- Sync & Cloud Database Operations ---
+    async function syncCloudVault() {
+      const statusEl = document.getElementById('sync-status');
+      if (statusEl) statusEl.innerText = "กำลังซิงก์...";
 
-    function unlockVault() {
-      const pass = document.getElementById('vault-password-input').value;
-      if (!pass) return;
-
-      const rawCipher = localStorage.getItem('gothic_vault_db');
-      
-      if (!rawCipher) {
-        // กรณีเริ่มต้นครั้งแรก ให้ใช้ชุดข้อมูล Default
-        currentVaultKey = pass;
-        syncSaveVault();
-      } else {
-        const decrypted = decryptData(rawCipher, pass);
-        if (!decrypted) {
-          document.getElementById('vault-error-msg').classList.remove('hidden');
-          return;
+      if (!supabase) {
+        // Fallback เก็บใน LocalStorage กรณีไม่ได้ต่อ Cloud
+        if (currentMasterKey) {
+          const cipher = encryptPayload(vaultData, currentMasterKey);
+          if (cipher) localStorage.setItem('local_vault_fallback', cipher);
         }
-        // Fallback โครงสร้างเพื่อความปลอดภัย
-        vaultData = {
-          notes: Array.isArray(decrypted.notes) ? decrypted.notes : [],
-          schedules: Array.isArray(decrypted.schedules) ? decrypted.schedules : [],
-          tasks: Array.isArray(decrypted.tasks) ? decrypted.tasks : [],
-          studyStats: decrypted.studyStats || {},
-          gpaProfile: decrypted.gpaProfile || { currentGpax: 0, currentCredits: 0, targetGpax: 0, termCredits: 0, courses: [] }
-        };
-        currentVaultKey = pass;
+        if (statusEl) statusEl.innerText = "บันทึกในเครื่อง (Offline)";
+        return;
       }
 
-      document.getElementById('vault-lock-screen').classList.add('hidden');
-      renderAllViews();
-      lucide.createIcons();
+      if (!currentUser || !currentMasterKey) return;
+
+      const encryptedData = encryptPayload(vaultData, currentMasterKey);
+      if (!encryptedData) return;
+
+      const { error } = await supabase
+        .from('user_vaults')
+        .upsert({
+          user_id: currentUser.id,
+          encrypted_data: encryptedData,
+          updated_at: new Date()
+        });
+
+      if (statusEl) {
+        statusEl.innerText = error ? "ซิงก์ล้มเหลว" : "ซิงก์คลาวด์แล้ว";
+      }
     }
 
-    function lockVault() {
-      currentVaultKey = null;
-      document.getElementById('vault-password-input').value = '';
-      document.getElementById('vault-error-msg').classList.add('hidden');
+    async function fetchCloudVault() {
+      const statusEl = document.getElementById('sync-status');
+      if (!supabase || !currentUser) {
+        // โหลดจาก LocalStorage ถ้าไม่มี Cloud
+        const cached = localStorage.getItem('local_vault_fallback');
+        if (cached && currentMasterKey) {
+          const parsed = decryptPayload(cached, currentMasterKey);
+          if (parsed) vaultData = sanitizeVaultData(parsed);
+        }
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('user_vaults')
+        .select('encrypted_data')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (data && data.encrypted_data) {
+        const decrypted = decryptPayload(data.encrypted_data, currentMasterKey);
+        if (decrypted) {
+          vaultData = sanitizeVaultData(decrypted);
+        }
+      } else {
+        // บัญชีใหม่ ส่ง Default ขึ้น Cloud
+        await syncCloudVault();
+      }
+
+      if (statusEl) statusEl.innerText = "ข้อมูลตรงกับ Cloud";
+    }
+
+    function sanitizeVaultData(raw) {
+      return {
+        notes: Array.isArray(raw.notes) ? raw.notes : [],
+        schedules: Array.isArray(raw.schedules) ? raw.schedules : [],
+        tasks: Array.isArray(raw.tasks) ? raw.tasks : [],
+        studyStats: raw.studyStats || {},
+        gpaProfile: raw.gpaProfile || defaultData.gpaProfile
+      };
+    }
+
+    // --- Authentication Actions ---
+    async function handleCloudSignIn() {
+      const email = document.getElementById('auth-email-input').value.trim();
+      const password = document.getElementById('auth-password-input').value;
+      const status = document.getElementById('auth-status-msg');
+
+      if (!email || !password) {
+        status.innerText = "กรุณากรอกทั้งอีเมลและรหัสผ่าน";
+        status.classList.remove('hidden');
+        return;
+      }
+
+      if (!supabase) {
+        // โหมด Offline ทดสอบ
+        currentUser = { id: 'offline-user', email };
+        currentMasterKey = password;
+        onLoginSuccess(email);
+        return;
+      }
+
+      status.innerText = "กำลังยืนยันตัวตน...";
+      status.classList.remove('hidden');
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        status.innerText = error.message;
+        return;
+      }
+
+      currentUser = data.user;
+      currentMasterKey = password;
+      await onLoginSuccess(email);
+    }
+
+    async function handleCloudSignUp() {
+      const email = document.getElementById('auth-email-input').value.trim();
+      const password = document.getElementById('auth-password-input').value;
+      const status = document.getElementById('auth-status-msg');
+
+      if (!email || !password) {
+        status.innerText = "กรุณากรอกทั้งอีเมลและรหัสผ่าน";
+        status.classList.remove('hidden');
+        return;
+      }
+
+      if (!supabase) {
+        alert("กรุณาใส่ Supabase URL และ Key ก่อนเพื่อสมัครบัญชีจริง");
+        return;
+      }
+
+      status.innerText = "กำลังสร้างบัญชี...";
+      status.classList.remove('hidden');
+
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        status.innerText = error.message;
+        return;
+      }
+
+      currentUser = data.user;
+      currentMasterKey = password;
+      alert("สร้างบัญชีสำเร็จ! ยินดีต้อนรับสู่ระบบ");
+      await onLoginSuccess(email);
+    }
+
+    async function onLoginSuccess(email) {
+      document.getElementById('vault-lock-screen').classList.add('hidden');
+      document.getElementById('user-session-badge').innerText = `${email} (SYNCED)`;
+      await fetchCloudVault();
+      renderAllViews();
+    }
+
+    async function handleCloudSignOut() {
+      if (supabase) await supabase.auth.signOut();
+      currentUser = null;
+      currentMasterKey = null;
+      vaultData = JSON.parse(JSON.stringify(defaultData));
+      document.getElementById('auth-password-input').value = '';
+      document.getElementById('auth-status-msg').classList.add('hidden');
+      document.getElementById('user-session-badge').innerText = '';
       document.getElementById('vault-lock-screen').classList.remove('hidden');
     }
 
-    function resetVaultDatabase() {
-      if (confirm('ต้องการล้างข้อมูลทั้งหมดในระบบนี้ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
-        localStorage.removeItem('gothic_vault_db');
-        localStorage.removeItem('gpa_profile');
-        location.reload();
-      }
-    }
-
-    // --- Tab Switching ---
+    // --- UI Tabs & Modals ---
     function switchTab(tabId) {
       ['notes', 'schedule', 'kanban', 'pomodoro', 'gpa'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.add('hidden');
@@ -506,7 +614,7 @@
       lucide.createIcons();
     }
 
-    function saveNote() {
+    async function saveNote() {
       const title = document.getElementById('note-title-input').value.trim();
       const content = document.getElementById('note-content-input').value.trim();
       if (!content && !title) return;
@@ -517,16 +625,16 @@
         content,
         date: new Date().toLocaleDateString('th-TH')
       });
-      syncSaveVault();
       renderNotes();
       document.getElementById('note-title-input').value = '';
       document.getElementById('note-content-input').value = '';
+      await syncCloudVault();
     }
 
-    function deleteNote(id) {
+    async function deleteNote(id) {
       vaultData.notes = vaultData.notes.filter(n => n.id !== id);
-      syncSaveVault();
       renderNotes();
+      await syncCloudVault();
     }
 
     // --- 2. Schedule Logic ---
@@ -563,7 +671,7 @@
       lucide.createIcons();
     }
 
-    function saveScheduleItem() {
+    async function saveScheduleItem() {
       const name = document.getElementById('sched-input-name').value.trim();
       const day = document.getElementById('sched-input-day').value;
       const room = document.getElementById('sched-input-room').value.trim();
@@ -573,20 +681,20 @@
       if (!name) return alert('โปรดกรอกชื่อวิชา');
 
       vaultData.schedules.push({ id: Date.now(), name, day, room, start, end });
-      syncSaveVault();
       closeModal('schedule-modal');
       renderSchedule();
       document.getElementById('sched-input-name').value = '';
       document.getElementById('sched-input-room').value = '';
+      await syncCloudVault();
     }
 
-    function deleteSchedule(id) {
+    async function deleteSchedule(id) {
       vaultData.schedules = vaultData.schedules.filter(s => s.id !== id);
-      syncSaveVault();
       renderSchedule();
+      await syncCloudVault();
     }
 
-    // --- 3. Kanban Board Logic ---
+    // --- 3. Kanban Logic ---
     function renderTasks() {
       const cols = {
         todo: document.getElementById('col-todo'),
@@ -631,31 +739,31 @@
       lucide.createIcons();
     }
 
-    function saveTaskItem() {
+    async function saveTaskItem() {
       const title = document.getElementById('task-input-title').value.trim();
       const subject = document.getElementById('task-input-subject').value.trim() || 'GENERAL';
       const due = document.getElementById('task-input-due').value;
 
-      if (!title) return alert('โปรดกรอกชื่องาน');
+      if (!title) return alert('โปรดระบุชื่องาน');
 
       vaultData.tasks.push({ id: Date.now(), title, subject, due, status: 'todo' });
-      syncSaveVault();
       closeModal('task-modal');
       renderTasks();
       document.getElementById('task-input-title').value = '';
       document.getElementById('task-input-subject').value = '';
+      await syncCloudVault();
     }
 
-    function moveTask(id, nextStatus) {
+    async function moveTask(id, nextStatus) {
       vaultData.tasks = vaultData.tasks.map(t => t.id === id ? { ...t, status: nextStatus } : t);
-      syncSaveVault();
       renderTasks();
+      await syncCloudVault();
     }
 
-    function deleteTask(id) {
+    async function deleteTask(id) {
       vaultData.tasks = vaultData.tasks.filter(t => t.id !== id);
-      syncSaveVault();
       renderTasks();
+      await syncCloudVault();
     }
 
     // --- 4. Pomodoro Logic ---
@@ -701,12 +809,12 @@
       document.getElementById('pomodoro-toggle-btn').innerText = 'START';
     }
 
-    function logPomodoroStudy() {
+    async function logPomodoroStudy() {
       const tag = document.getElementById('pomodoro-tag').value.trim() || 'General Focus';
       if (!vaultData.studyStats) vaultData.studyStats = {};
       vaultData.studyStats[tag] = (vaultData.studyStats[tag] || 0) + 25;
-      syncSaveVault();
       renderPomodoroLogs();
+      await syncCloudVault();
     }
 
     function renderPomodoroLogs() {
@@ -744,23 +852,23 @@
         `;
         tbody.appendChild(tr);
       });
-      calculateTermGpa();
+      calculateTermGpa(false);
     }
 
-    function addGpaCourseRow() {
+    async function addGpaCourseRow() {
       if (!vaultData.gpaProfile.courses) vaultData.gpaProfile.courses = [];
       vaultData.gpaProfile.courses.push({ name: 'New Course', credits: 3, grade: 'A' });
       renderGpaCourses();
-      syncSaveVault();
+      await syncCloudVault();
     }
 
-    function removeGpaRow(index) {
+    async function removeGpaRow(index) {
       vaultData.gpaProfile.courses.splice(index, 1);
       renderGpaCourses();
-      syncSaveVault();
+      await syncCloudVault();
     }
 
-    function calculateTermGpa() {
+    async function calculateTermGpa(shouldSync = true) {
       const rows = document.querySelectorAll('#gpa-table-body tr');
       let totalPts = 0;
       let totalCredits = 0;
@@ -779,7 +887,8 @@
       const termGpa = totalCredits > 0 ? (totalPts / totalCredits).toFixed(2) : '0.00';
       document.getElementById('output-term-gpa').innerText = termGpa;
       document.getElementById('output-term-credits').innerText = `${totalCredits} หน่วยกิต`;
-      syncSaveVault();
+      
+      if (shouldSync) await syncCloudVault();
     }
 
     function runGpaSimulation() {
@@ -807,7 +916,6 @@
       }
     }
 
-    // --- Render All Master Function ---
     function renderAllViews() {
       renderNotes();
       renderSchedule();
@@ -815,7 +923,6 @@
       renderPomodoroLogs();
       renderGpaCourses();
       
-      // ดึงค่า GPA simulator เดิมขึ้นหน้าจอ
       if (vaultData.gpaProfile) {
         document.getElementById('sim-prev-gpax').value = vaultData.gpaProfile.currentGpax || '';
         document.getElementById('sim-prev-credits').value = vaultData.gpaProfile.currentCredits || '';
