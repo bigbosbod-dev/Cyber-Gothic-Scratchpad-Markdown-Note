@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>† GOTHIC KEEP // FOLDERS & TRASH VAULT †</title>
+  <title>† GOTHIC KEEP // CUSTOM FOLDERS †</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,7 +56,7 @@
     <!-- Top Header -->
     <header class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
       <div>
-        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ CYPHER VAULT WITH RECOVERY ✦</span>
+        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ CYPHER VAULT WITH CUSTOM FOLDERS ✦</span>
         <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase mt-0.5">
           GOTHIC // KEEP
         </h1>
@@ -110,21 +110,17 @@
         </div>
       </div>
 
-      <!-- Category Filter Pills + Trash Button -->
-      <div class="flex items-center justify-between gap-2 overflow-x-auto pb-1 text-xs no-scrollbar" id="folder-bar">
-        <div class="flex items-center gap-2">
-          <button onclick="setFilterFolder('ALL')" class="folder-pill px-3 py-1 bg-zinc-800 text-white font-mono uppercase tracking-wider transition-all border border-zinc-600">#ALL</button>
-          <button onclick="setFilterFolder('WORK')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#WORK</button>
-          <button onclick="setFilterFolder('PERSONAL')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#PERSONAL</button>
-          <button onclick="setFilterFolder('IDEAS')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#IDEAS</button>
-          <button onclick="setFilterFolder('URGENT')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#URGENT</button>
+      <!-- Dynamic Folder Filter Bar -->
+      <div class="flex items-center justify-between gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+        <div class="flex items-center gap-2 flex-wrap" id="folder-bar">
+          <!-- Folders injected by JavaScript -->
         </div>
-        <button onclick="setFilterFolder('TRASH')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-rose-950/80 hover:border-rose-700 text-rose-400 font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all">
+        <button onclick="setFilterFolder('TRASH')" id="trash-pill" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-rose-950/80 hover:border-rose-700 text-rose-400 font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all whitespace-nowrap">
           <i data-lucide="trash" class="w-3.5 h-3.5"></i> TRASH (<span id="trash-count">0</span>)
         </button>
       </div>
 
-      <!-- Create Box (Hidden when in Trash view) -->
+      <!-- Create Box -->
       <div class="sigil-card color-default max-w-xl mx-auto p-4 relative" id="create-box">
         <input 
           type="text" 
@@ -156,12 +152,9 @@
               <i data-lucide="check-square" class="w-3.5 h-3.5"></i> <span id="toggle-label">TO-DO</span>
             </button>
             
-            <select id="new-folder" class="bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 py-1 px-2 outline-none font-mono">
-              <option value="GENERAL">FOLDER: GENERAL</option>
-              <option value="WORK">FOLDER: WORK</option>
-              <option value="PERSONAL">FOLDER: PERSONAL</option>
-              <option value="IDEAS">FOLDER: IDEAS</option>
-              <option value="URGENT">FOLDER: URGENT</option>
+            <!-- Dynamic Folder Selection -->
+            <select id="new-folder" onchange="handleFolderSelectChange(this)" class="bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 py-1 px-2 outline-none font-mono">
+              <!-- Options populated by JS -->
             </select>
 
             <div class="flex items-center gap-1.5">
@@ -234,6 +227,7 @@
 
     let currentCryptoKey = null;
     let localNotes = [];
+    let customFolders = ['GENERAL'];
     let isChecklistMode = false;
     let activeColor = 'default';
     let activeFolderFilter = 'ALL';
@@ -305,11 +299,11 @@
       if (error) throw error;
 
       localNotes = [];
+      const foldersSet = new Set(['GENERAL']);
       const now = new Date();
       const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
       for (const row of data || []) {
-        // Auto-purge notes in trash older than 30 days
         if (row.is_deleted && row.deleted_at) {
           const deletedTime = new Date(row.deleted_at);
           if (now - deletedTime > thirtyDaysMs) {
@@ -320,20 +314,80 @@
 
         try {
           const content = await decryptData(row.payload);
+          const folder = (content.folder || 'GENERAL').toUpperCase();
+          foldersSet.add(folder);
+
           localNotes.push({ 
             id: row.id, 
             is_pinned: row.is_pinned, 
             is_deleted: !!row.is_deleted,
             deleted_at: row.deleted_at,
             updated_at: row.updated_at, 
-            ...content 
+            ...content,
+            folder: folder
           });
         } catch (e) {
           console.warn("Skip invalid note", row.id);
         }
       }
+
+      customFolders = Array.from(foldersSet);
+      updateFolderUI();
       updateTrashCount();
       renderNotes();
+    }
+
+    function updateFolderUI() {
+      const folderBar = document.getElementById("folder-bar");
+      const folderSelect = document.getElementById("new-folder");
+
+      // Render Folder Filter Pills
+      let pillsHtml = `<button onclick="setFilterFolder('ALL')" class="folder-pill px-3 py-1 ${activeFolderFilter === 'ALL' ? 'bg-zinc-800 text-white border border-zinc-600' : 'bg-zinc-900/60 border border-zinc-800 text-zinc-400'} font-mono uppercase tracking-wider transition-all">#ALL</button>`;
+
+      customFolders.forEach(f => {
+        const isActive = activeFolderFilter === f;
+        pillsHtml += `<button onclick="setFilterFolder('${f}')" class="folder-pill px-3 py-1 ${isActive ? 'bg-zinc-800 text-white border border-zinc-600' : 'bg-zinc-900/60 border border-zinc-800 text-zinc-400'} font-mono uppercase tracking-wider transition-all">#${f}</button>`;
+      });
+
+      pillsHtml += `<button onclick="promptCreateFolder()" class="px-2 py-1 border border-dashed border-zinc-700 hover:border-zinc-400 text-zinc-500 hover:text-white font-mono text-[11px] uppercase transition-all flex items-center gap-1">+ NEW FOLDER</button>`;
+      folderBar.innerHTML = pillsHtml;
+
+      // Render Folder Dropdown Options
+      let optionsHtml = '';
+      customFolders.forEach(f => {
+        optionsHtml += `<option value="${f}">FOLDER: ${f}</option>`;
+      });
+      optionsHtml += `<option value="__NEW__">+ สร้างโฟลเดอร์ใหม่...</option>`;
+      folderSelect.innerHTML = optionsHtml;
+    }
+
+    function promptCreateFolder() {
+      const name = prompt("ตั้งชื่อโฟลเดอร์ใหม่ (เช่น WORK, PROJECT, SECRETS):");
+      if (!name) return;
+      const cleanName = name.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+      if (!cleanName) return alert("ชื่อโฟลเดอร์ไม่ถูกต้อง");
+
+      if (!customFolders.includes(cleanName)) {
+        customFolders.push(cleanName);
+        updateFolderUI();
+      }
+      setFilterFolder(cleanName);
+    }
+
+    function handleFolderSelectChange(select) {
+      if (select.value === '__NEW__') {
+        const name = prompt("ตั้งชื่อโฟลเดอร์ใหม่:");
+        if (name) {
+          const cleanName = name.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+          if (cleanName && !customFolders.includes(cleanName)) {
+            customFolders.push(cleanName);
+            updateFolderUI();
+            select.value = cleanName;
+            return;
+          }
+        }
+        select.value = 'GENERAL';
+      }
     }
 
     function updateTrashCount() {
@@ -343,14 +397,14 @@
 
     function setFilterFolder(folder) {
       activeFolderFilter = folder;
-      const pills = document.querySelectorAll(".folder-pill");
-      pills.forEach(p => {
-        if (p.innerText.includes(`#${folder}`) || (folder === 'TRASH' && p.innerText.includes('TRASH'))) {
-          p.className = "folder-pill px-3 py-1 bg-zinc-800 text-white font-mono uppercase tracking-wider transition-all border border-zinc-600";
-        } else {
-          p.className = "folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all";
-        }
-      });
+      updateFolderUI();
+
+      const trashPill = document.getElementById("trash-pill");
+      if (folder === 'TRASH') {
+        trashPill.className = "folder-pill px-3 py-1 bg-rose-950/60 border border-rose-600 text-rose-300 font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all whitespace-nowrap";
+      } else {
+        trashPill.className = "folder-pill px-3 py-1 bg-zinc-900/60 border border-rose-950/80 hover:border-rose-700 text-rose-400 font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all whitespace-nowrap";
+      }
 
       document.getElementById("create-box").classList.toggle("hidden", folder === 'TRASH');
       document.getElementById("trash-banner").classList.toggle("hidden", folder !== 'TRASH');
@@ -377,7 +431,7 @@
       document.getElementById("new-title").value = "";
       document.getElementById("new-body").value = "";
       document.getElementById("new-pin").checked = false;
-      document.getElementById("new-folder").value = "GENERAL";
+      document.getElementById("new-folder").value = (activeFolderFilter !== 'ALL' && activeFolderFilter !== 'TRASH') ? activeFolderFilter : "GENERAL";
       document.getElementById("todo-items-builder").innerHTML = "";
       selectColor('default');
       if (isChecklistMode) toggleNoteType();
@@ -428,6 +482,12 @@
       if (error) return alert("บันทึกไม่สำเร็จ: " + error.message);
 
       localNotes.unshift({ id: data.id, title, content: bodyData, color: activeColor, folder: folder, is_pinned: isPinned, is_deleted: false, updated_at: data.updated_at });
+      
+      if (!customFolders.includes(folder)) {
+        customFolders.push(folder);
+        updateFolderUI();
+      }
+
       collapseCreateBox();
       renderNotes();
     }
@@ -510,7 +570,7 @@
           if (!n.is_deleted) return false;
         } else {
           if (n.is_deleted) return false;
-          if (activeFolderFilter !== 'ALL' && (n.folder || 'GENERAL') !== activeFolderFilter) return false;
+          if (activeFolderFilter !== 'ALL' && n.folder !== activeFolderFilter) return false;
         }
 
         const titleMatch = (n.title || "").toLowerCase().includes(query);
@@ -535,7 +595,7 @@
       notesGrid.innerHTML = others.map(n => buildCardHtml(n, inTrash)).join("");
 
       pinnedSection.classList.toggle("hidden", pinned.length === 0 || inTrash);
-      othersLabel.innerText = inTrash ? "DELETED ENTRIES" : "ALL NOTES";
+      othersLabel.innerText = inTrash ? "DELETED ENTRIES" : (activeFolderFilter === 'ALL' ? 'ALL NOTES' : `FOLDER: ${activeFolderFilter}`);
 
       lucide.createIcons();
     }
