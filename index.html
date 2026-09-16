@@ -220,7 +220,6 @@
 
       <!-- ================= TAB 2: TIMETABLE ================= -->
       <section id="tab-schedule" class="tab-content hidden space-y-6">
-        <!-- Next Class Indicator -->
         <div id="next-class-card" class="sigil-card color-emerald p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <span class="text-[10px] text-emerald-400 font-mono tracking-widest uppercase block">✦ UPCOMING / CURRENT CLASS ✦</span>
@@ -232,7 +231,6 @@
           </div>
         </div>
 
-        <!-- Add Class Form -->
         <div class="sigil-card color-default p-4">
           <h4 class="text-xs font-bold text-zinc-300 font-mono uppercase tracking-wider mb-3 flex items-center gap-2">
             <i data-lucide="plus-circle" class="w-4 h-4 text-zinc-400"></i> เพิ่มรายวิชาในตารางเรียน
@@ -261,13 +259,11 @@
           </div>
         </div>
 
-        <!-- Timetable View By Day -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4" id="timetable-matrix"></div>
       </section>
 
       <!-- ================= TAB 3: ASSIGNMENTS KANBAN ================= -->
       <section id="tab-kanban" class="tab-content hidden space-y-6">
-        <!-- New Task Form -->
         <div class="sigil-card color-default p-4 flex flex-col md:flex-row gap-3 items-end">
           <div class="flex-1 w-full space-y-1">
             <label class="text-[10px] text-zinc-500 font-mono uppercase">ชื่องาน / รายละเอียดโปรเจกต์</label>
@@ -286,9 +282,7 @@
           </button>
         </div>
 
-        <!-- Kanban Columns -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <!-- TO DO -->
           <div class="space-y-3">
             <div class="flex items-center justify-between pb-2 border-b border-zinc-800 text-zinc-400 font-mono text-xs uppercase">
               <span>TO DO</span>
@@ -296,7 +290,6 @@
             </div>
             <div id="col-todo" class="space-y-3 min-h-[300px]"></div>
           </div>
-          <!-- IN PROGRESS -->
           <div class="space-y-3">
             <div class="flex items-center justify-between pb-2 border-b border-amber-900/60 text-amber-400 font-mono text-xs uppercase">
               <span>DOING</span>
@@ -304,7 +297,6 @@
             </div>
             <div id="col-doing" class="space-y-3 min-h-[300px]"></div>
           </div>
-          <!-- REVIEW -->
           <div class="space-y-3">
             <div class="flex items-center justify-between pb-2 border-b border-violet-900/60 text-violet-400 font-mono text-xs uppercase">
               <span>REVIEW</span>
@@ -312,7 +304,6 @@
             </div>
             <div id="col-review" class="space-y-3 min-h-[300px]"></div>
           </div>
-          <!-- DONE -->
           <div class="space-y-3">
             <div class="flex items-center justify-between pb-2 border-b border-emerald-900/60 text-emerald-400 font-mono text-xs uppercase">
               <span>DONE</span>
@@ -326,7 +317,6 @@
       <!-- ================= TAB 4: POMODORO CHAMBER ================= -->
       <section id="tab-pomodoro" class="tab-content hidden space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Timer Display -->
           <div class="sigil-card color-crimson p-8 flex flex-col items-center justify-center text-center lg:col-span-2">
             <span id="pomo-mode-badge" class="text-[11px] px-3 py-1 bg-rose-950/60 border border-rose-500/50 text-rose-300 font-mono uppercase tracking-widest mb-4">
               FOCUS SESSION
@@ -354,7 +344,6 @@
             </div>
           </div>
 
-          <!-- Subject Focus Stats -->
           <div class="sigil-card color-default p-5 space-y-4">
             <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
               <h4 class="text-xs font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
@@ -371,7 +360,6 @@
 
       <!-- ================= TAB 5: GPA SIMULATOR ================= -->
       <section id="tab-gpa" class="tab-content hidden space-y-6">
-        <!-- Summary Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="sigil-card color-amber p-4">
             <span class="text-[10px] text-amber-400/80 font-mono uppercase tracking-wider block">TARGET GPAX</span>
@@ -396,12 +384,10 @@
           </div>
         </div>
 
-        <!-- Simulation Result Box -->
         <div id="gpa-simulator-result" class="sigil-card color-violet p-5 font-mono text-xs leading-relaxed">
           กำลังคำนวณการจำลองเกรด...
         </div>
 
-        <!-- Current Semester Course Planner -->
         <div class="sigil-card color-default p-5 space-y-4">
           <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
             <h4 class="text-xs font-bold text-white font-mono uppercase tracking-wider">
@@ -423,7 +409,6 @@
   <div id="toast-container"></div>
 
   <script>
-    // Config Supabase
     const SUPABASE_URL = "https://ljotkgjiudazeutfxvei.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_i6aEENM6sSGPsXDJB0Cpvg_ThUWPG7w";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -433,7 +418,6 @@
     let inactivityTimer = null;
     let isSignUpMode = false;
 
-    // Local State
     let appData = {
       notes: [],
       timetable: [],
@@ -446,7 +430,6 @@
     let isChecklistMode = false;
     let activeFilterFolder = 'ALL';
 
-    // Pomodoro Timer State
     let pomoMinutes = 25;
     let pomoSeconds = 0;
     let pomoInterval = null;
@@ -529,7 +512,6 @@
       inactivityTimer = setTimeout(() => lockVault(), 10 * 60 * 1000);
     }
 
-    // AES-GCM 256-bit Encryption Helpers
     async function deriveKey(passphrase) {
       const enc = new TextEncoder();
       const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(passphrase), { name: "PBKDF2" }, false, ["deriveKey"]);
@@ -576,7 +558,6 @@
         document.getElementById("auth-status").innerHTML = `<span class="text-[10px] text-emerald-400 font-mono">${currentUser.email} (UNLOCKED)</span>`;
         resetInactivityTimer();
         
-        // Initial Render
         renderNotes();
         renderTimetable();
         renderKanban();
@@ -605,9 +586,12 @@
       }
     }
 
-    // Sync save to Supabase via Upsert
+    // ฟังก์ชันบันทึกข้อมูลแบบตรวจจับและแจ้งเตือนชัดเจน
     async function syncSaveCategory(category) {
-      if (!currentCryptoKey || !currentUser) return;
+      if (!currentCryptoKey || !currentUser) {
+        console.error("No key or user found!");
+        return;
+      }
       try {
         const dataToSave = appData[category];
         const encrypted = await encryptData(dataToSave);
@@ -617,33 +601,46 @@
           .upsert({
             user_id: currentUser.id,
             category: category,
-            payload: encrypted,
-            updated_at: new Date().toISOString()
+            payload: encrypted
           }, { onConflict: 'user_id,category' });
 
         if (error) {
-          console.error("Save error:", error);
+          console.error("Supabase Save Error:", error);
           showToast("บันทึกไม่สำเร็จ: " + error.message, "error");
+        } else {
+          console.log("Save success:", category);
         }
       } catch (err) {
-        console.error("Encrypt error:", err);
+        console.error("Encrypt/Save error:", err);
+        showToast("เกิดข้อผิดพลาดในการเข้ารหัส: " + err.message, "error");
       }
     }
 
+    // ฟังก์ชันโหลดข้อมูลกลับมาแสดงผล
     async function syncLoadAllData() {
-      const { data, error } = await supabaseClient.from('study_vault').select('*');
-      if (error) throw error;
+      if (!currentUser) return;
+      const { data, error } = await supabaseClient
+        .from('study_vault')
+        .select('category, payload')
+        .eq('user_id', currentUser.id);
 
-      for (const row of data || []) {
-        try {
-          const decrypted = await decryptData(row.payload);
-          if (row.category === 'keep_notes') appData.notes = decrypted;
-          if (row.category === 'timetable') appData.timetable = decrypted;
-          if (row.category === 'assignments') appData.assignments = decrypted;
-          if (row.category === 'pomodoro_stats') appData.pomo_stats = decrypted;
-          if (row.category === 'gpa_profile') appData.gpa = decrypted;
-        } catch (e) {
-          console.warn("Decrypt error for category:", row.category);
+      if (error) {
+        console.error("Load Error:", error);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        for (const row of data) {
+          try {
+            const decrypted = await decryptData(row.payload);
+            if (row.category === 'keep_notes') appData.notes = decrypted || [];
+            if (row.category === 'timetable') appData.timetable = decrypted || [];
+            if (row.category === 'assignments') appData.assignments = decrypted || [];
+            if (row.category === 'pomodoro_stats') appData.pomo_stats = decrypted || {};
+            if (row.category === 'gpa_profile') appData.gpa = decrypted || { target: 3.5, accumCredits: 60, currentGpax: 3.2, courses: [] };
+          } catch (e) {
+            console.warn("Decrypt error for category:", row.category, e);
+          }
         }
       }
     }
@@ -765,14 +762,12 @@
       const query = (document.getElementById("note-search")?.value || "").toLowerCase();
       const folders = Array.from(new Set(['GENERAL', ...appData.notes.map(n => n.folder || 'GENERAL')]));
       
-      // Render Folder Pills
       let pillsHtml = `<button onclick="setFilterFolder('ALL')" class="px-2.5 py-1 text-[11px] font-mono uppercase ${activeFilterFolder === 'ALL' ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400'}">#ALL</button>`;
       folders.forEach(f => {
         pillsHtml += `<button onclick="setFilterFolder('${f}')" class="px-2.5 py-1 text-[11px] font-mono uppercase ${activeFilterFolder === f ? 'bg-white text-black font-bold' : 'border border-zinc-800 text-zinc-400'}">#${f}</button>`;
       });
       document.getElementById("folder-pills").innerHTML = pillsHtml;
 
-      // Select Dropdown
       const select = document.getElementById("new-folder");
       select.innerHTML = folders.map(f => `<option value="${f}">${f}</option>`).join("") + `<option value="__NEW__">+ สร้างโฟลเดอร์ใหม่...</option>`;
 
@@ -920,7 +915,7 @@
       const dayMap = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
       const now = new Date();
       const currentDay = dayMap[now.getDay()];
-      const currentTime = now.toTimeString().slice(0, 5); // "HH:MM"
+      const currentTime = now.toTimeString().slice(0, 5);
 
       const todayClasses = appData.timetable.filter(c => c.day === currentDay).sort((a,b) => a.start.localeCompare(b.start));
       const current = todayClasses.find(c => c.start <= currentTime && c.end >= currentTime);
@@ -1203,7 +1198,6 @@
       const currentPoints = accumCredits * currentGpax;
       const projectedGpax = totalCredits > 0 ? ((currentPoints + termQualityPoints) / totalCredits) : currentGpax;
 
-      // Calculate required term GPA to achieve target
       let requiredTermGpa = 0;
       if (termCredits > 0) {
         requiredTermGpa = ((targetGpax * totalCredits) - currentPoints) / termCredits;
