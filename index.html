@@ -595,7 +595,11 @@
     async function syncSaveCategory(category) {
       if (!currentCryptoKey || !currentUser) return;
       try {
-        const dataToSave = appData[category];
+        let dataToSave = appData[category];
+        if (category === 'keep_notes') {
+          dataToSave = Array.isArray(appData.notes) ? appData.notes : [];
+        }
+
         const encrypted = await encryptData(dataToSave);
         
         const { error } = await supabaseClient
@@ -634,6 +638,9 @@
                 appData.notes = decrypted;
               } else if (decrypted && Array.isArray(decrypted.notes)) {
                 appData.notes = decrypted.notes;
+              } else if (decrypted && typeof decrypted === 'object') {
+                // กรณีถูกห่อมาเป็น Object เดี่ยวหรือแปลงร่าง
+                appData.notes = Object.values(decrypted).filter(item => typeof item === 'object' && item !== null);
               } else {
                 appData.notes = [];
               }
