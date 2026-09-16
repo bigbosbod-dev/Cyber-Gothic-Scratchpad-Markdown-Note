@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>† GOTHIC KEEP // ADVANCED VAULT †</title>
+  <title>† GOTHIC KEEP // FOLDERS & VAULT †</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,7 +58,7 @@
     <!-- Top Header -->
     <header class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
       <div>
-        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ ADVANCED CYPHER PROTOCOL ✦</span>
+        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ ADVANCED CYPHER VAULT ✦</span>
         <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase mt-0.5">
           GOTHIC // KEEP
         </h1>
@@ -92,7 +92,7 @@
     <!-- Keep Workspace (Unlocked) -->
     <div id="keep-screen" class="hidden space-y-6">
       
-      <!-- Top Actions Bar -->
+      <!-- Top Search & Actions -->
       <div class="flex items-center justify-between gap-3">
         <div class="relative flex-1 max-w-md">
           <i data-lucide="search" class="w-4 h-4 text-zinc-500 absolute left-3 top-2.5"></i>
@@ -110,6 +110,15 @@
             LOCK
           </button>
         </div>
+      </div>
+
+      <!-- Category / Folder Filter Pills -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar" id="folder-bar">
+        <button onclick="setFilterFolder('ALL')" class="folder-pill active-pill px-3 py-1 bg-zinc-800 text-white font-mono uppercase tracking-wider transition-all">#ALL</button>
+        <button onclick="setFilterFolder('WORK')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#WORK</button>
+        <button onclick="setFilterFolder('PERSONAL')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#PERSONAL</button>
+        <button onclick="setFilterFolder('IDEAS')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#IDEAS</button>
+        <button onclick="setFilterFolder('URGENT')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#URGENT</button>
       </div>
 
       <!-- Create Box -->
@@ -139,11 +148,20 @@
         </div>
 
         <div id="create-actions" class="hidden flex flex-wrap items-center justify-between gap-3 pt-3 mt-2 border-t border-zinc-800/60">
-          <div class="flex items-center gap-3">
+          <div class="flex flex-wrap items-center gap-3">
             <button onclick="toggleNoteType()" id="type-toggle-btn" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1 border border-zinc-800 px-2 py-1">
               <i data-lucide="check-square" class="w-3.5 h-3.5"></i> <span id="toggle-label">TO-DO</span>
             </button>
             
+            <!-- Folder Selection -->
+            <select id="new-folder" class="bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 py-1 px-2 outline-none font-mono">
+              <option value="GENERAL">FOLDER: GENERAL</option>
+              <option value="WORK">FOLDER: WORK</option>
+              <option value="PERSONAL">FOLDER: PERSONAL</option>
+              <option value="IDEAS">FOLDER: IDEAS</option>
+              <option value="URGENT">FOLDER: URGENT</option>
+            </select>
+
             <div class="flex items-center gap-1.5">
               <button onclick="selectColor('default')" class="w-3.5 h-3.5 rounded-full bg-zinc-700 hover:scale-110 transition-transform"></button>
               <button onclick="selectColor('crimson')" class="w-3.5 h-3.5 rounded-full bg-rose-500 hover:scale-110 transition-transform"></button>
@@ -184,7 +202,7 @@
 
   </div>
 
-  <!-- Custom Gothic Delete Confirmation Modal -->
+  <!-- Delete Modal -->
   <div id="delete-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="sigil-card color-crimson max-w-sm w-full p-6 text-center">
       <div class="text-3xl mb-2 text-rose-500">⚠️</div>
@@ -211,6 +229,7 @@
     let localNotes = [];
     let isChecklistMode = false;
     let activeColor = 'default';
+    let activeFolderFilter = 'ALL';
     let inactivityTimer = null;
     let noteIdToDelete = null;
 
@@ -289,6 +308,19 @@
       renderNotes();
     }
 
+    function setFilterFolder(folder) {
+      activeFolderFilter = folder;
+      const pills = document.querySelectorAll(".folder-pill");
+      pills.forEach(p => {
+        if (p.innerText === `#${folder}`) {
+          p.className = "folder-pill px-3 py-1 bg-zinc-800 text-white font-mono uppercase tracking-wider transition-all border border-zinc-600";
+        } else {
+          p.className = "folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all";
+        }
+      });
+      renderNotes();
+    }
+
     function selectColor(color) {
       activeColor = color;
       const box = document.getElementById("create-box");
@@ -308,6 +340,7 @@
       document.getElementById("new-title").value = "";
       document.getElementById("new-body").value = "";
       document.getElementById("new-pin").checked = false;
+      document.getElementById("new-folder").value = "GENERAL";
       document.getElementById("todo-items-builder").innerHTML = "";
       selectColor('default');
       if (isChecklistMode) toggleNoteType();
@@ -337,6 +370,7 @@
 
     async function createNote() {
       const title = document.getElementById("new-title").value.trim();
+      const folder = document.getElementById("new-folder").value;
       const isPinned = document.getElementById("new-pin").checked;
       let bodyData = null;
 
@@ -351,12 +385,12 @@
         bodyData = { type: 'note', text: body };
       }
 
-      const payload = await encryptData({ title, content: bodyData, color: activeColor });
+      const payload = await encryptData({ title, content: bodyData, color: activeColor, folder: folder });
       const { data, error } = await supabaseClient.from('notes').insert([{ payload, is_pinned: isPinned }]).select().single();
 
       if (error) return alert("บันทึกไม่สำเร็จ: " + error.message);
 
-      localNotes.unshift({ id: data.id, title, content: bodyData, color: activeColor, is_pinned: isPinned, updated_at: data.updated_at });
+      localNotes.unshift({ id: data.id, title, content: bodyData, color: activeColor, folder: folder, is_pinned: isPinned, updated_at: data.updated_at });
       collapseCreateBox();
       renderNotes();
     }
@@ -368,7 +402,7 @@
       note.content.items[itemIdx].done = !note.content.items[itemIdx].done;
       renderNotes();
 
-      const payload = await encryptData({ title: note.title, content: note.content, color: note.color });
+      const payload = await encryptData({ title: note.title, content: note.content, color: note.color, folder: note.folder });
       await supabaseClient.from('notes').update({ payload, updated_at: new Date().toISOString() }).eq('id', noteId);
     }
 
@@ -408,6 +442,12 @@
     function renderNotes() {
       const query = (document.getElementById("search-input")?.value || "").toLowerCase();
       const filtered = localNotes.filter(n => {
+        // Folder filter
+        if (activeFolderFilter !== 'ALL' && (n.folder || 'GENERAL') !== activeFolderFilter) {
+          return false;
+        }
+
+        // Search query filter
         const titleMatch = (n.title || "").toLowerCase().includes(query);
         let contentMatch = false;
         if (n.content?.type === 'checklist') {
@@ -456,11 +496,18 @@
         bodyHtml = `<div class="md-content text-xs text-zinc-400 mt-2 break-words leading-relaxed">${marked.parse(plainText)}</div>`;
       }
 
+      const folderTag = n.folder && n.folder !== 'GENERAL' 
+        ? `<span class="text-[9px] px-1.5 py-0.5 border border-zinc-800 text-zinc-400 font-mono uppercase tracking-wider">#${n.folder}</span>` 
+        : '';
+
       return `
         <div class="sigil-card ${colorClass} ${n.is_pinned ? 'pinned-badge' : ''} p-4 flex flex-col justify-between group">
           <div>
             <div class="flex items-start justify-between gap-2">
-              <h4 class="text-white font-bold text-sm tracking-wide break-words">${escapeHtml(n.title || 'UNTITLED')}</h4>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <h4 class="text-white font-bold text-sm tracking-wide break-words">${escapeHtml(n.title || 'UNTITLED')}</h4>
+                ${folderTag}
+              </div>
               <button onclick="togglePin('${n.id}')" class="text-zinc-600 hover:text-amber-400 transition-colors p-1">
                 <i data-lucide="pin" class="w-3.5 h-3.5 ${n.is_pinned ? 'text-amber-400 fill-amber-400' : ''}"></i>
               </button>
