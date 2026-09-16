@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>† GOTHIC KEEP // FOLDERS & VAULT †</title>
+  <title>† GOTHIC KEEP // FOLDERS & TRASH VAULT †</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,9 +31,7 @@
     .color-amber   { border: 1px solid rgba(245, 158, 11, 0.45); box-shadow: 0 0 15px rgba(245, 158, 11, 0.15); }
     .color-violet  { border: 1px solid rgba(139, 92, 246, 0.45); box-shadow: 0 0 15px rgba(139, 92, 246, 0.15); }
 
-    .pinned-badge {
-      box-shadow: inset 0 0 10px rgba(251, 191, 36, 0.2);
-    }
+    .pinned-badge { box-shadow: inset 0 0 10px rgba(251, 191, 36, 0.2); }
     .md-content p { margin-bottom: 0.5rem; }
     .md-content pre {
       background: #020204;
@@ -58,7 +56,7 @@
     <!-- Top Header -->
     <header class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
       <div>
-        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ ADVANCED CYPHER VAULT ✦</span>
+        <span class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] block">✦ CYPHER VAULT WITH RECOVERY ✦</span>
         <h1 class="gothic-title text-xl md:text-2xl font-black text-white uppercase mt-0.5">
           GOTHIC // KEEP
         </h1>
@@ -68,7 +66,7 @@
       </div>
     </header>
 
-    <!-- Master Key Lock Screen -->
+    <!-- Master Key Screen -->
     <div id="lock-screen" class="sigil-card color-default max-w-md mx-auto p-8 text-center my-12">
       <div class="text-3xl mb-3">🔒</div>
       <h2 class="text-sm font-bold uppercase tracking-widest text-white mb-2">ENTER MASTER KEY</h2>
@@ -89,10 +87,10 @@
       </button>
     </div>
 
-    <!-- Keep Workspace (Unlocked) -->
+    <!-- Keep Workspace -->
     <div id="keep-screen" class="hidden space-y-6">
       
-      <!-- Top Search & Actions -->
+      <!-- Top Bar: Search & Status -->
       <div class="flex items-center justify-between gap-3">
         <div class="relative flex-1 max-w-md">
           <i data-lucide="search" class="w-4 h-4 text-zinc-500 absolute left-3 top-2.5"></i>
@@ -112,16 +110,21 @@
         </div>
       </div>
 
-      <!-- Category / Folder Filter Pills -->
-      <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar" id="folder-bar">
-        <button onclick="setFilterFolder('ALL')" class="folder-pill active-pill px-3 py-1 bg-zinc-800 text-white font-mono uppercase tracking-wider transition-all">#ALL</button>
-        <button onclick="setFilterFolder('WORK')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#WORK</button>
-        <button onclick="setFilterFolder('PERSONAL')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#PERSONAL</button>
-        <button onclick="setFilterFolder('IDEAS')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#IDEAS</button>
-        <button onclick="setFilterFolder('URGENT')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#URGENT</button>
+      <!-- Category Filter Pills + Trash Button -->
+      <div class="flex items-center justify-between gap-2 overflow-x-auto pb-1 text-xs no-scrollbar" id="folder-bar">
+        <div class="flex items-center gap-2">
+          <button onclick="setFilterFolder('ALL')" class="folder-pill px-3 py-1 bg-zinc-800 text-white font-mono uppercase tracking-wider transition-all border border-zinc-600">#ALL</button>
+          <button onclick="setFilterFolder('WORK')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#WORK</button>
+          <button onclick="setFilterFolder('PERSONAL')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#PERSONAL</button>
+          <button onclick="setFilterFolder('IDEAS')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#IDEAS</button>
+          <button onclick="setFilterFolder('URGENT')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all">#URGENT</button>
+        </div>
+        <button onclick="setFilterFolder('TRASH')" class="folder-pill px-3 py-1 bg-zinc-900/60 border border-rose-950/80 hover:border-rose-700 text-rose-400 font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all">
+          <i data-lucide="trash" class="w-3.5 h-3.5"></i> TRASH (<span id="trash-count">0</span>)
+        </button>
       </div>
 
-      <!-- Create Box -->
+      <!-- Create Box (Hidden when in Trash view) -->
       <div class="sigil-card color-default max-w-xl mx-auto p-4 relative" id="create-box">
         <input 
           type="text" 
@@ -153,7 +156,6 @@
               <i data-lucide="check-square" class="w-3.5 h-3.5"></i> <span id="toggle-label">TO-DO</span>
             </button>
             
-            <!-- Folder Selection -->
             <select id="new-folder" class="bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 py-1 px-2 outline-none font-mono">
               <option value="GENERAL">FOLDER: GENERAL</option>
               <option value="WORK">FOLDER: WORK</option>
@@ -182,6 +184,11 @@
         </div>
       </div>
 
+      <!-- Trash Banner info -->
+      <div id="trash-banner" class="hidden sigil-card p-3 border border-rose-900/60 bg-rose-950/20 text-rose-300 text-xs text-center font-mono">
+        🗑️ บันทึกในถังขยะจะถูกทำลายถาวรอัตโนมัติหลังจากผ่านไป 30 วัน
+      </div>
+
       <!-- Pinned Notes Section -->
       <div id="pinned-section" class="hidden">
         <h3 class="text-[10px] text-amber-400/80 tracking-[0.2em] uppercase font-mono mb-3 flex items-center gap-1.5">
@@ -206,15 +213,15 @@
   <div id="delete-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="sigil-card color-crimson max-w-sm w-full p-6 text-center">
       <div class="text-3xl mb-2 text-rose-500">⚠️</div>
-      <h3 class="text-sm font-bold uppercase tracking-widest text-white mb-2">CONFIRM DESTRUCTION</h3>
-      <p class="text-xs text-zinc-400 mb-6 font-mono leading-relaxed">คุณแน่ใจหรือไม่ว่าต้องการทำลายบันทึกนี้? ข้อมูลที่เข้ารหัสจะถูกลบถาวรและไม่สามารถกู้คืนได้</p>
+      <h3 class="text-sm font-bold uppercase tracking-widest text-white mb-2" id="modal-title">MOVE TO TRASH</h3>
+      <p class="text-xs text-zinc-400 mb-6 font-mono leading-relaxed" id="modal-desc">ต้องการย้ายบันทึกนี้ไปถังขยะใช่หรือไม่? (สามารถกู้คืนได้ภายใน 30 วัน)</p>
       
       <div class="flex gap-3 justify-center">
         <button onclick="closeDeleteModal()" class="flex-1 py-2 border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white text-xs uppercase tracking-wider transition-all">
           ยกเลิก
         </button>
         <button onclick="confirmDeleteNote()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider transition-all">
-          ยืนยันการลบ
+          ยืนยัน
         </button>
       </div>
     </div>
@@ -232,6 +239,7 @@
     let activeFolderFilter = 'ALL';
     let inactivityTimer = null;
     let noteIdToDelete = null;
+    let isPermanentDelete = false;
 
     function resetInactivityTimer() {
       if (!currentCryptoKey) return;
@@ -297,27 +305,56 @@
       if (error) throw error;
 
       localNotes = [];
+      const now = new Date();
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
       for (const row of data || []) {
+        // Auto-purge notes in trash older than 30 days
+        if (row.is_deleted && row.deleted_at) {
+          const deletedTime = new Date(row.deleted_at);
+          if (now - deletedTime > thirtyDaysMs) {
+            supabaseClient.from('notes').delete().eq('id', row.id);
+            continue;
+          }
+        }
+
         try {
           const content = await decryptData(row.payload);
-          localNotes.push({ id: row.id, is_pinned: row.is_pinned, updated_at: row.updated_at, ...content });
+          localNotes.push({ 
+            id: row.id, 
+            is_pinned: row.is_pinned, 
+            is_deleted: !!row.is_deleted,
+            deleted_at: row.deleted_at,
+            updated_at: row.updated_at, 
+            ...content 
+          });
         } catch (e) {
           console.warn("Skip invalid note", row.id);
         }
       }
+      updateTrashCount();
       renderNotes();
+    }
+
+    function updateTrashCount() {
+      const count = localNotes.filter(n => n.is_deleted).length;
+      document.getElementById("trash-count").innerText = count;
     }
 
     function setFilterFolder(folder) {
       activeFolderFilter = folder;
       const pills = document.querySelectorAll(".folder-pill");
       pills.forEach(p => {
-        if (p.innerText === `#${folder}`) {
+        if (p.innerText.includes(`#${folder}`) || (folder === 'TRASH' && p.innerText.includes('TRASH'))) {
           p.className = "folder-pill px-3 py-1 bg-zinc-800 text-white font-mono uppercase tracking-wider transition-all border border-zinc-600";
         } else {
           p.className = "folder-pill px-3 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white font-mono uppercase tracking-wider transition-all";
         }
       });
+
+      document.getElementById("create-box").classList.toggle("hidden", folder === 'TRASH');
+      document.getElementById("trash-banner").classList.toggle("hidden", folder !== 'TRASH');
+
       renderNotes();
     }
 
@@ -386,11 +423,11 @@
       }
 
       const payload = await encryptData({ title, content: bodyData, color: activeColor, folder: folder });
-      const { data, error } = await supabaseClient.from('notes').insert([{ payload, is_pinned: isPinned }]).select().single();
+      const { data, error } = await supabaseClient.from('notes').insert([{ payload, is_pinned: isPinned, is_deleted: false }]).select().single();
 
       if (error) return alert("บันทึกไม่สำเร็จ: " + error.message);
 
-      localNotes.unshift({ id: data.id, title, content: bodyData, color: activeColor, folder: folder, is_pinned: isPinned, updated_at: data.updated_at });
+      localNotes.unshift({ id: data.id, title, content: bodyData, color: activeColor, folder: folder, is_pinned: isPinned, is_deleted: false, updated_at: data.updated_at });
       collapseCreateBox();
       renderNotes();
     }
@@ -414,8 +451,11 @@
       renderNotes();
     }
 
-    function openDeleteModal(id) {
+    function openDeleteModal(id, permanent = false) {
       noteIdToDelete = id;
+      isPermanentDelete = permanent;
+      document.getElementById("modal-title").innerText = permanent ? "PERMANENT DESTRUCTION" : "MOVE TO TRASH";
+      document.getElementById("modal-desc").innerText = permanent ? "การกระทำนี้จะลบข้อมูลที่เข้ารหัสลับออกจากฐานข้อมูลอย่างถาวร ไม่สามารถกู้คืนได้" : "ต้องการย้ายบันทึกนี้ไปถังขยะใช่หรือไม่? (สามารถกู้คืนได้ภายใน 30 วัน)";
       document.getElementById("delete-modal").classList.remove("hidden");
     }
 
@@ -429,8 +469,30 @@
       const id = noteIdToDelete;
       closeDeleteModal();
       
-      await supabaseClient.from('notes').delete().eq('id', id);
-      localNotes = localNotes.filter(n => n.id !== id);
+      if (isPermanentDelete) {
+        await supabaseClient.from('notes').delete().eq('id', id);
+        localNotes = localNotes.filter(n => n.id !== id);
+      } else {
+        const delTime = new Date().toISOString();
+        await supabaseClient.from('notes').update({ is_deleted: true, deleted_at: delTime }).eq('id', id);
+        const note = localNotes.find(n => n.id === id);
+        if (note) {
+          note.is_deleted = true;
+          note.deleted_at = delTime;
+        }
+      }
+      updateTrashCount();
+      renderNotes();
+    }
+
+    async function restoreNote(id) {
+      await supabaseClient.from('notes').update({ is_deleted: false, deleted_at: null }).eq('id', id);
+      const note = localNotes.find(n => n.id === id);
+      if (note) {
+        note.is_deleted = false;
+        note.deleted_at = null;
+      }
+      updateTrashCount();
       renderNotes();
     }
 
@@ -441,13 +503,16 @@
 
     function renderNotes() {
       const query = (document.getElementById("search-input")?.value || "").toLowerCase();
+      const inTrash = (activeFolderFilter === 'TRASH');
+
       const filtered = localNotes.filter(n => {
-        // Folder filter
-        if (activeFolderFilter !== 'ALL' && (n.folder || 'GENERAL') !== activeFolderFilter) {
-          return false;
+        if (inTrash) {
+          if (!n.is_deleted) return false;
+        } else {
+          if (n.is_deleted) return false;
+          if (activeFolderFilter !== 'ALL' && (n.folder || 'GENERAL') !== activeFolderFilter) return false;
         }
 
-        // Search query filter
         const titleMatch = (n.title || "").toLowerCase().includes(query);
         let contentMatch = false;
         if (n.content?.type === 'checklist') {
@@ -458,24 +523,24 @@
         return titleMatch || contentMatch;
       });
 
-      const pinned = filtered.filter(n => n.is_pinned);
-      const others = filtered.filter(n => !n.is_pinned);
+      const pinned = filtered.filter(n => n.is_pinned && !inTrash);
+      const others = filtered.filter(n => !n.is_pinned || inTrash);
 
       const pinnedGrid = document.getElementById("pinned-grid");
       const notesGrid = document.getElementById("notes-grid");
       const pinnedSection = document.getElementById("pinned-section");
       const othersLabel = document.getElementById("others-label");
 
-      pinnedGrid.innerHTML = pinned.map(buildCardHtml).join("");
-      notesGrid.innerHTML = others.map(buildCardHtml).join("");
+      pinnedGrid.innerHTML = pinned.map(n => buildCardHtml(n, false)).join("");
+      notesGrid.innerHTML = others.map(n => buildCardHtml(n, inTrash)).join("");
 
-      pinnedSection.classList.toggle("hidden", pinned.length === 0);
-      othersLabel.classList.toggle("hidden", pinned.length === 0);
+      pinnedSection.classList.toggle("hidden", pinned.length === 0 || inTrash);
+      othersLabel.innerText = inTrash ? "DELETED ENTRIES" : "ALL NOTES";
 
       lucide.createIcons();
     }
 
-    function buildCardHtml(n) {
+    function buildCardHtml(n, inTrash) {
       const colorClass = `color-${n.color || 'default'}`;
       let bodyHtml = '';
       let rawTextForCopy = n.title ? `${n.title}\n\n` : '';
@@ -484,8 +549,8 @@
         bodyHtml = `<div class="space-y-1 mt-2">` + n.content.items.map((it, idx) => {
           rawTextForCopy += `[${it.done ? 'x' : ' '}] ${it.text}\n`;
           return `
-            <div onclick="toggleCheckItem('${n.id}', ${idx})" class="flex items-center gap-2 cursor-pointer group/item py-0.5">
-              <i data-lucide="${it.done ? 'check-square' : 'square'}" class="w-3.5 h-3.5 ${it.done ? 'text-emerald-400' : 'text-zinc-600 group-hover/item:text-zinc-400'}"></i>
+            <div onclick="${inTrash ? '' : `toggleCheckItem('${n.id}', ${idx})`}" class="flex items-center gap-2 ${inTrash ? '' : 'cursor-pointer'} py-0.5">
+              <i data-lucide="${it.done ? 'check-square' : 'square'}" class="w-3.5 h-3.5 ${it.done ? 'text-emerald-400' : 'text-zinc-600'}"></i>
               <span class="text-xs ${it.done ? 'line-through text-zinc-600' : 'text-zinc-300'}">${escapeHtml(it.text)}</span>
             </div>
           `;
@@ -500,29 +565,44 @@
         ? `<span class="text-[9px] px-1.5 py-0.5 border border-zinc-800 text-zinc-400 font-mono uppercase tracking-wider">#${n.folder}</span>` 
         : '';
 
+      const actions = inTrash 
+        ? `
+          <button onclick="restoreNote('${n.id}')" title="Restore" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 text-[11px] uppercase">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> กู้คืน
+          </button>
+          <button onclick="openDeleteModal('${n.id}', true)" title="Delete Permanently" class="text-rose-500 hover:text-rose-400">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        `
+        : `
+          <button onclick="copyToClipboard(\`${escapeAttr(rawTextForCopy.trim())}\`)" title="Copy" class="hover:text-zinc-200">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="openDeleteModal('${n.id}', false)" title="Move to Trash" class="hover:text-red-400">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        `;
+
       return `
-        <div class="sigil-card ${colorClass} ${n.is_pinned ? 'pinned-badge' : ''} p-4 flex flex-col justify-between group">
+        <div class="sigil-card ${colorClass} ${n.is_pinned && !inTrash ? 'pinned-badge' : ''} p-4 flex flex-col justify-between group">
           <div>
             <div class="flex items-start justify-between gap-2">
               <div class="flex items-center gap-1.5 flex-wrap">
                 <h4 class="text-white font-bold text-sm tracking-wide break-words">${escapeHtml(n.title || 'UNTITLED')}</h4>
                 ${folderTag}
               </div>
-              <button onclick="togglePin('${n.id}')" class="text-zinc-600 hover:text-amber-400 transition-colors p-1">
-                <i data-lucide="pin" class="w-3.5 h-3.5 ${n.is_pinned ? 'text-amber-400 fill-amber-400' : ''}"></i>
-              </button>
+              ${!inTrash ? `
+                <button onclick="togglePin('${n.id}')" class="text-zinc-600 hover:text-amber-400 transition-colors p-1">
+                  <i data-lucide="pin" class="w-3.5 h-3.5 ${n.is_pinned ? 'text-amber-400 fill-amber-400' : ''}"></i>
+                </button>
+              ` : ''}
             </div>
             ${bodyHtml}
           </div>
           <div class="flex items-center justify-between pt-4 mt-3 border-t border-zinc-900/80 text-[10px] text-zinc-600">
             <span>${new Date(n.updated_at).toLocaleDateString('th-TH')}</span>
-            <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onclick="copyToClipboard(\`${escapeAttr(rawTextForCopy.trim())}\`)" title="Copy" class="hover:text-zinc-200">
-                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-              </button>
-              <button onclick="openDeleteModal('${n.id}')" title="Delete" class="hover:text-red-400">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-              </button>
+            <div class="flex items-center gap-2 ${inTrash ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity">
+              ${actions}
             </div>
           </div>
         </div>
