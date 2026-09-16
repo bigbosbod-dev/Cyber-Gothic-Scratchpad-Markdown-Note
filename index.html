@@ -130,6 +130,9 @@
           <button onclick="switchTab('keep')" id="tab-btn-keep" class="nav-tab active px-3.5 py-1.5 border border-zinc-800 text-xs font-mono tracking-wider uppercase flex items-center gap-1.5 transition-all">
             <i data-lucide="file-text" class="w-3.5 h-3.5"></i> KEEP NOTES
           </button>
+          <button onclick="switchTab('trash')" id="tab-btn-trash" class="nav-tab px-3.5 py-1.5 border border-zinc-800 text-xs font-mono tracking-wider uppercase flex items-center gap-1.5 transition-all text-zinc-400 hover:text-rose-400">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> TRASH (<span id="trash-count">0</span>)
+          </button>
           <button onclick="switchTab('schedule')" id="tab-btn-schedule" class="nav-tab px-3.5 py-1.5 border border-zinc-800 text-xs font-mono tracking-wider uppercase flex items-center gap-1.5 transition-all">
             <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TIMETABLE
           </button>
@@ -216,6 +219,19 @@
           </h3>
           <div id="notes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
+      </section>
+
+      <!-- ================= TAB 1.5: TRASH BIN (30 DAYS) ================= -->
+      <section id="tab-trash" class="tab-content hidden space-y-6">
+        <div class="flex items-center justify-between pb-3 border-b border-zinc-800">
+          <div>
+            <h3 class="text-xs font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="trash-2" class="w-4 h-4 text-rose-400"></i> TRASH // ถังขยะ (เก็บรักษา 30 วัน)
+            </h3>
+            <p class="text-[11px] text-zinc-500 font-mono mt-0.5">โน้ตที่ถูกลบจะอยู่ในนี้ และจะถูกลบถาวรโดยอัตโนมัติเมื่อครบ 30 วัน</p>
+          </div>
+        </div>
+        <div id="trash-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </section>
 
       <!-- ================= TAB 2: TIMETABLE ================= -->
@@ -564,7 +580,9 @@
         resetInactivityTimer();
         
         activeFilterFolder = 'ALL';
+        cleanupExpiredTrash(); // ตรวจสอบลบโน้ตเกิน 30 วันอัตโนมัติ
         renderNotes();
+        renderTrash();
         renderTimetable();
         renderKanban();
         renderPomodoroStats();
@@ -638,9 +656,6 @@
                 appData.notes = decrypted;
               } else if (decrypted && Array.isArray(decrypted.notes)) {
                 appData.notes = decrypted.notes;
-              } else if (decrypted && typeof decrypted === 'object') {
-                // กรณีถูกห่อมาเป็น Object เดี่ยวหรือแปลงร่าง
-                appData.notes = Object.values(decrypted).filter(item => typeof item === 'object' && item !== null);
               } else {
                 appData.notes = [];
               }
@@ -662,10 +677,11 @@
 
       document.getElementById(`tab-${tabId}`).classList.remove('hidden');
       document.getElementById(`tab-btn-${tabId}`).classList.add('active');
+      if (tabId === 'trash') renderTrash();
       lucide.createIcons();
     }
 
-    // ================= 1. KEEP NOTES SYSTEM =================
+    // ================= 1. KEEP NOTES SYSTEM & TRASH (30 DAYS) =================
     function selectColor(color) {
       activeColor = color;
       document.getElementById("create-box").className = `sigil-card color-${color} max-w-xl mx-auto p-4 relative`;
@@ -735,6 +751,8 @@
         folder: folder.toUpperCase(),
         color: activeColor,
         is_pinned: isPinned,
+        is_deleted: false,
+        deleted_at: null,
         updated_at: new Date().toISOString()
       };
 
@@ -748,17 +766,64 @@
       showToast("บันทึกโน้ตสำเร็จ ✦");
     }
 
+    // ย้ายโน้ตไปถังขยะ (Soft Delete) แทนการลบทิ้งทันที
     async function deleteNote(id) {
-      if (!confirm("ต้องการลบโน้ตนี้ใช่หรือไม่?")) return;
-      appData.notes = appData.notes.filter(n => n.id !== id);
+      const note = appData.notes.find(n => n.id === id);
+      if (!note) return;
+      
+      note.is_deleted = true;
+      note.deleted_at = new Date().toISOString();
+      note.is_pinned = false; // ปลดหมุดเมื่อเข้าถังขยะ
+
       await syncSaveCategory('keep_notes');
       renderNotes();
-      showToast("ลบโน้ตเรียบร้อย", "info");
+      renderTrash();
+      showToast("ย้ายโน้ตไปที่ถังขยะแล้ว (กู้คืนได้ภายใน 30 วัน)", "info");
+    }
+
+    // กู้คืนโน้ตจากถังขยะ
+    async function restoreNote(id) {
+      const note = appData.notes.find(n => n.id === id);
+      if (!note) return;
+
+      note.is_deleted = false;
+      note.deleted_at = null;
+
+      await syncSaveCategory('keep_notes');
+      renderNotes();
+      renderTrash();
+      showToast("กู้คืนโน้ตสำเร็จ ✦");
+    }
+
+    // ลบถาวรทันที
+    async function permanentDeleteNote(id) {
+      if (!confirm("ต้องการลบโน้ตนี้ถาวรใช่หรือไม่? ไม่สามารถกู้คืนได้")) return;
+      appData.notes = appData.notes.filter(n => n.id !== id);
+      await syncSaveCategory('keep_notes');
+      renderTrash();
+      showToast("ลบโน้ตถาวรเรียบร้อย", "info");
+    }
+
+    // เคลียร์โน้ตที่อยู่ในถังขยะเกิน 30 วันอัตโนมัติ
+    function cleanupExpiredTrash() {
+      const now = new Date().getTime();
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+      
+      const beforeCount = appData.notes.length;
+      appData.notes = appData.notes.filter(n => {
+        if (!n.is_deleted || !n.deleted_at) return true;
+        const deletedTime = new Date(n.deleted_at).getTime();
+        return (now - deletedTime) < thirtyDaysMs;
+      });
+
+      if (appData.notes.length < beforeCount) {
+        syncSaveCategory('keep_notes');
+      }
     }
 
     async function togglePinNote(id) {
       const note = appData.notes.find(n => n.id === id);
-      if (!note) return;
+      if (!note || note.is_deleted) return;
       note.is_pinned = !note.is_pinned;
       await syncSaveCategory('keep_notes');
       renderNotes();
@@ -776,7 +841,10 @@
       const searchInput = document.getElementById("note-search");
       const query = (searchInput ? searchInput.value : "").toLowerCase().trim();
       
-      const existingFolders = (appData.notes || []).map(n => (n.folder || 'GENERAL').toUpperCase());
+      // กรองเฉพาะโน้ตที่ยังไม่ถูกลบ (is_deleted !== true)
+      const activeNotes = (appData.notes || []).filter(n => n && !n.is_deleted);
+
+      const existingFolders = activeNotes.map(n => (n.folder || 'GENERAL').toUpperCase());
       const folders = Array.from(new Set(['GENERAL', ...existingFolders]));
       
       const pillsContainer = document.getElementById("folder-pills");
@@ -795,12 +863,9 @@
         if (folders.includes(currentVal)) select.value = currentVal;
       }
 
-      const allNotes = Array.isArray(appData.notes) ? appData.notes : [];
-      const filtered = allNotes.filter(n => {
-        if (!n) return false;
+      const filtered = activeNotes.filter(n => {
         const noteFolder = (n.folder || 'GENERAL').toUpperCase();
         if (activeFilterFolder !== 'ALL' && noteFolder !== activeFilterFolder) return false;
-        
         if (!query) return true;
 
         const tMatch = (n.title || "").toLowerCase().includes(query);
@@ -815,28 +880,50 @@
         return tMatch || cMatch;
       });
 
-      const pinned = filtered.filter(n => n && n.is_pinned);
-      const others = filtered.filter(n => n && !n.is_pinned);
+      const pinned = filtered.filter(n => n.is_pinned);
+      const others = filtered.filter(n => !n.is_pinned);
 
       const pinnedGrid = document.getElementById("pinned-grid");
       const notesGrid = document.getElementById("notes-grid");
       const pinnedSection = document.getElementById("pinned-section");
 
-      if (pinnedGrid) pinnedGrid.innerHTML = pinned.map(buildNoteCardHtml).join("");
-      if (notesGrid) notesGrid.innerHTML = others.map(buildNoteCardHtml).join("");
+      if (pinnedGrid) pinnedGrid.innerHTML = pinned.map(n => buildNoteCardHtml(n, false)).join("");
+      if (notesGrid) notesGrid.innerHTML = others.map(n => buildNoteCardHtml(n, false)).join("");
       if (pinnedSection) pinnedSection.classList.toggle("hidden", pinned.length === 0);
 
-      if (window.lucide) {
-        lucide.createIcons();
-      }
+      // อัปเดตตัวเลขในเมนูถังขยะ
+      const trashCount = (appData.notes || []).filter(n => n && n.is_deleted).length;
+      const countEl = document.getElementById("trash-count");
+      if (countEl) countEl.innerText = trashCount;
+
+      if (window.lucide) lucide.createIcons();
     }
 
-    function buildNoteCardHtml(n) {
+    function renderTrash() {
+      const trashNotes = (appData.notes || []).filter(n => n && n.is_deleted);
+      const trashGrid = document.getElementById("trash-grid");
+      
+      if (trashGrid) {
+        if (trashNotes.length === 0) {
+          trashGrid.innerHTML = `<div class="text-xs text-zinc-600 font-mono text-center py-12 col-span-full">ถังขยะว่างเปล่า</div>`;
+        } else {
+          trashGrid.innerHTML = trashNotes.map(n => buildNoteCardHtml(n, true)).join("");
+        }
+      }
+
+      const trashCount = trashNotes.length;
+      const countEl = document.getElementById("trash-count");
+      if (countEl) countEl.innerText = trashCount;
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function buildNoteCardHtml(n, isTrash = false) {
       if (!n) return '';
       let bodyHtml = '';
       if (n.content && n.content.type === 'checklist' && Array.isArray(n.content.items)) {
-        bodyHtml = `<div class="space-y-1 mt-2">` + n.content.items.map((it, idx) => `
-          <div onclick="toggleNoteCheckItem('${n.id}', ${idx})" class="flex items-center gap-2 cursor-pointer py-0.5">
+        bodyHtml = `<div class="space-y-1 mt-2">` + n.content.items.map((it) => `
+          <div class="flex items-center gap-2 py-0.5">
             <i data-lucide="${it.done ? 'check-square' : 'square'}" class="w-3.5 h-3.5 ${it.done ? 'text-emerald-400' : 'text-zinc-600'}"></i>
             <span class="text-xs ${it.done ? 'line-through text-zinc-600' : 'text-zinc-300'}">${escapeHtml(it.text || '')}</span>
           </div>
@@ -854,6 +941,29 @@
 
       const dateStr = n.updated_at ? new Date(n.updated_at).toLocaleDateString('th-TH') : '';
 
+      if (isTrash) {
+        const deletedDate = n.deleted_at ? new Date(n.deleted_at).toLocaleDateString('th-TH') : '';
+        return `
+          <div class="sigil-card color-default p-4 flex flex-col justify-between opacity-75">
+            <div>
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="text-white font-bold text-sm break-words">${escapeHtml(n.title || 'UNTITLED')}</h4>
+                <span class="text-[9px] px-1.5 py-0.5 bg-rose-950/60 border border-rose-500/40 text-rose-300 font-mono">ลบแล้ว</span>
+              </div>
+              <span class="text-[9px] text-zinc-500 font-mono uppercase tracking-widest block mt-0.5">#${escapeHtml(n.folder || 'GENERAL')}</span>
+              ${bodyHtml}
+            </div>
+            <div class="flex items-center justify-between pt-3 mt-3 border-t border-zinc-900 text-[10px] text-zinc-500 font-mono">
+              <span>ลบเมื่อ: ${deletedDate}</span>
+              <div class="flex gap-2">
+                <button onclick="restoreNote('${n.id}')" class="text-emerald-400 hover:underline">กู้คืน</button>
+                <button onclick="permanentDeleteNote('${n.id}')" class="text-rose-400 hover:underline">ลบถาวร</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
       return `
         <div class="sigil-card color-${n.color || 'default'} p-4 flex flex-col justify-between group">
           <div>
@@ -868,7 +978,7 @@
           </div>
           <div class="flex items-center justify-between pt-3 mt-3 border-t border-zinc-900 text-[10px] text-zinc-600">
             <span>${dateStr}</span>
-            <button onclick="deleteNote('${n.id}')" class="hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onclick="deleteNote('${n.id}')" class="hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity" title="ย้ายไปถังขยะ">
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             </button>
           </div>
